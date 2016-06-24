@@ -25,6 +25,8 @@ package drawandcut;
 
 import static drawandcut.Configuration.LINE_WIDTH;
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.input.InputEvent;
@@ -51,7 +53,7 @@ public class DrawPane extends StackPane {
     
     private final Pane canvasBackground = new Pane();
     private final Canvas canvas;
-    private Drawing drawing;
+    private ObjectProperty<Drawing> drawing = new SimpleObjectProperty<>();
 
     public DrawPane() {
         setBackground(new Background(new BackgroundFill(Color.DARKGRAY, CornerRadii.EMPTY,
@@ -117,30 +119,30 @@ public class DrawPane extends StackPane {
         if (Double.isNaN(x) || Double.isNaN(y)) {
             return;
         }
-        drawing = new Drawing(x, y);
+        drawing.set(new Drawing(x, y));
     }
     
     private void continueDrawing(InputEvent e) {
-        if (drawing == null) {
+        if (drawing.get() == null) {
             return;
         }
         double x = getX(e), y = getY(e);
         if (Double.isNaN(x) || Double.isNaN(y)) {
             return;
         }
-        drawing.continueTo(x, y);
+        drawing.get().continueTo(x, y);
         canvas.getGraphicsContext2D().lineTo(x, y);
     }
     
     private void stopDrawing(InputEvent e) {
-        if (drawing == null) {
+        if (drawing.get() == null) {
             return;
         }
         double x = getX(e), y = getY(e);
         if (Double.isNaN(x) || Double.isNaN(y)) {
             return;
         }
-        drawing.stop(x, y);
+        drawing.get().stop(x, y);
     }
     
     private class Drawing {
@@ -166,6 +168,10 @@ public class DrawPane extends StackPane {
             canvas.getGraphicsContext2D().closePath();
             canvas.getGraphicsContext2D().stroke();
         }
+    }
+
+    public ObjectProperty<Drawing> drawingProperty() {
+        return drawing;
     }
     
 }

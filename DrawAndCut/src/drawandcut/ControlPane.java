@@ -23,37 +23,37 @@
  */
 package drawandcut;
 
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.layout.BorderPane;
-import javafx.stage.Stage;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
+import javafx.scene.layout.GridPane;
 
 /**
  *
  * @author akouznet
  */
-public class DrawAndCut extends Application {
+public class ControlPane extends GridPane {
+    
+    private final double BUTTON_PREF_SIZE = 100;
+    private final double PADDING = 8;
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String[] args) {
-        launch(args);
+    private final Button print = new Button("Print");
+
+    public ControlPane() {
+        print.setOnAction(e -> print());
+        print.setPrefSize(BUTTON_PREF_SIZE, BUTTON_PREF_SIZE);
+        
+        setPadding(new Insets(PADDING));
+        setAlignment(Pos.CENTER);
+        addRow(0, print);
+    }
+    
+    public void print() {
+        System.out.println("Print");
     }
 
-    @Override
-    public void start(Stage primaryStage) throws Exception {
-        DrawPane drawPane = new DrawPane();
-        ControlPane controlPane = new ControlPane();
-        controlPane.printButton().disableProperty().bind(drawPane.drawingProperty().isNull());
-        
-        BorderPane borderPane = new BorderPane(drawPane);
-        borderPane.setLeft(controlPane);
-        
-        primaryStage.setTitle("JavaOne2016 - Draw and Cut demo");
-        primaryStage.setScene(new Scene(borderPane));
-        primaryStage.show();
-        primaryStage.setMaximized(true);
+    public Button printButton() {
+        return print;
     }
     
 }
