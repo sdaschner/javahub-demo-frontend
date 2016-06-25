@@ -23,6 +23,12 @@
  */
 package drawandcut;
 
+import static drawandcut.Configuration.TARGET_FEED;
+import static drawandcut.Configuration.TARGET_RPM;
+import drawandcut.gcode.PathConverter;
+import drawandcut.ui.ControlPane;
+import drawandcut.ui.DrawPane;
+import java.util.List;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
@@ -46,6 +52,17 @@ public class DrawAndCut extends Application {
         DrawPane drawPane = new DrawPane();
         ControlPane controlPane = new ControlPane();
         controlPane.printButton().disableProperty().bind(drawPane.drawingProperty().isNull());
+        controlPane.printButton().setOnAction(t -> {
+            DrawPane.Drawing drawing = drawPane.drawingProperty().get();
+            if (drawing == null) {
+                return;
+            }
+            List<String> output = new PathConverter(drawing.getPath(), TARGET_RPM, TARGET_FEED).getOutput();
+            System.out.println("Program:");
+            for(String line : output) {
+                System.out.println(line);
+            }
+        });
         
         BorderPane borderPane = new BorderPane(drawPane);
         borderPane.setLeft(controlPane);

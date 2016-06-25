@@ -21,9 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package drawandcut;
+package drawandcut.ui;
 
-import static drawandcut.Configuration.LINE_WIDTH;
+import drawandcut.Configuration;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -44,6 +44,7 @@ import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
+import static drawandcut.Configuration.LINE_WIDTH_MM;
 
 /**
  *
@@ -54,6 +55,7 @@ public class DrawPane extends StackPane {
     private final Pane canvasBackground = new Pane();
     private final Canvas canvas;
     private ObjectProperty<Drawing> drawing = new SimpleObjectProperty<>();
+    private double pxPerMm = 1;
 
     public DrawPane() {
         setBackground(new Background(new BackgroundFill(Color.DARKGRAY, CornerRadii.EMPTY,
@@ -86,7 +88,8 @@ public class DrawPane extends StackPane {
         canvas.getGraphicsContext2D().setStroke(Color.BLACK);
         
         canvas.widthProperty().addListener(e -> {
-            canvas.getGraphicsContext2D().setLineWidth(LINE_WIDTH * canvas.getWidth() / Configuration.MATERIAL_SIZE_X);
+            pxPerMm = canvas.getWidth() / Configuration.MATERIAL_SIZE_X;
+            canvas.getGraphicsContext2D().setLineWidth(LINE_WIDTH_MM * pxPerMm);
         });
     }
     
@@ -145,29 +148,42 @@ public class DrawPane extends StackPane {
         drawing.get().stop(x, y);
     }
     
-    private class Drawing {
+    public class Drawing {
         private Path p = new Path();
 
-        public Drawing(double x, double y) {
-            p.getElements().add(new MoveTo(x, y));
+        private Drawing(double x, double y) {
+            p.getElements().add(new MoveTo(convertX(x), convertY(y)));
             canvas.getGraphicsContext2D().clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
             canvas.getGraphicsContext2D().beginPath();
             canvas.getGraphicsContext2D().moveTo(x, y);
         }
         
-        public void continueTo(double x, double y) {
-            p.getElements().add(new LineTo(x, y));
+        private void continueTo(double x, double y) {
+            p.getElements().add(new LineTo(convertX(x), convertY(y)));
             canvas.getGraphicsContext2D().lineTo(x, y);
             canvas.getGraphicsContext2D().stroke();
         }
         
-        public void stop(double x, double y) {
-            p.getElements().add(new LineTo(x, y));
+        private void stop(double x, double y) {
+            p.getElements().add(new LineTo(convertX(x), convertY(y)));
             p.getElements().add(new ClosePath());
             canvas.getGraphicsContext2D().lineTo(x, y);
             canvas.getGraphicsContext2D().closePath();
             canvas.getGraphicsContext2D().stroke();
         }
+        
+        private double convertX(double x) {
+            return x / pxPerMm;
+        }
+        
+        private double convertY(double y) {
+            return Configuration.MATERIAL_SIZE_Y - y / pxPerMm;
+        }
+
+        public Path getPath() {
+            return new Path(p.getElements());
+        }
+        
     }
 
     public ObjectProperty<Drawing> drawingProperty() {
