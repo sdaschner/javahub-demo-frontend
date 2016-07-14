@@ -23,6 +23,7 @@
  */
 package drawandcut;
 
+import drawandcut.cutter.CutterConnection;
 import static drawandcut.Configuration.TARGET_FEED;
 import static drawandcut.Configuration.TARGET_RPM;
 import drawandcut.gcode.PathConverter;
@@ -69,8 +70,10 @@ public class DrawAndCut extends Application {
         
         primaryStage.setTitle("JavaOne2016 - Draw and Cut demo");
         primaryStage.setScene(new Scene(borderPane));
-        primaryStage.show();
-        primaryStage.setMaximized(true);
+//        primaryStage.show();
+//        primaryStage.setMaximized(true);
+        
+        new CutterConnection().connectToCutter();
     }
     
 }
