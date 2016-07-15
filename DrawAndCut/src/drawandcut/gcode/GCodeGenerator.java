@@ -38,10 +38,20 @@ public class GCodeGenerator {
     public static final int MAX_RPM = 10000;
     public static final double EMPTY = Double.NaN;
     
-    private static final double SAFE_Z = 5;
-    private static final double BOTTOM_Z = -1/8. * Configuration.IN;
+    private static final double TOP_Z = Configuration.MATERIAL_BASE_Z + Configuration.MATERIAL_SIZE_Z;
+    private static final double BOTTOM_Z = Configuration.MATERIAL_BASE_Z;
+    private static final double SAFE_Z = TOP_Z + 5;
     
     private final List<String> output = new ArrayList<>();
+    
+    private double x = EMPTY, y = EMPTY, z = EMPTY, f = EMPTY, rpm = EMPTY;
+    private Units units = null;
+    private Coordinates coordinates = null;
+    private MovementMode movementMode = null;
+
+    public enum Units { MM, INCHES };
+    public enum Coordinates { ABSOLUTE, RELATIVE };
+    public enum MovementMode { RAPID, LINEAR };
 
     public GCodeGenerator() {
     }
@@ -50,7 +60,6 @@ public class GCodeGenerator {
         unitsMillimeters();
         coordinatesAbsolute();
         // skipping the tool change
-        rapidZ(SAFE_Z);
         spindleClockwise(targetRPM);
     }
     
@@ -64,6 +73,7 @@ public class GCodeGenerator {
     
     public void rapid(double x, double y, double z) {
         output.add("G0" + buildXYZF(x, y, z));
+        this.x = x; this.y = y; this.z = z; this.movementMode = MovementMode.RAPID;
     }
 
     public void linearZ(double z) {
@@ -84,22 +94,28 @@ public class GCodeGenerator {
 
     public void linear(double x, double y, double z, double f) {
         output.add("G1" + buildXYZF(x, y, z, f));
+        this.x = x; this.y = y; this.z = z; this.f = f; 
+        this.movementMode = MovementMode.LINEAR;
     }
 
     public void unitsInches() {
         output.add("G20");
+        this.units = Units.INCHES;
     }
     
     public void unitsMillimeters() {
         output.add("G21");
+        this.units = Units.MM;
     }
     
     public void coordinatesAbsolute() {
         output.add("G90");
+        this.coordinates = Coordinates.ABSOLUTE;
     }
     
     public void coordinatesRelative() {
         output.add("G91");
+        this.coordinates = Coordinates.RELATIVE;
     }
     
     public void spindleClockwise(int rpm) {
@@ -107,14 +123,34 @@ public class GCodeGenerator {
             throw new IllegalArgumentException("Spindle rpm is out of range " + MIN_RPM + " to " + MAX_RPM + ": " + rpm);
         }
         output.add("M3 S" + rpm);
+        this.rpm = rpm;
     }
     
     public void spindleStop() {
         output.add("M5");
+        this.rpm = 0;
     }
     
     public void programEnd() {
         output.add("M30");
+        resetState();
+    }
+    
+    public void goHome() {
+        output.add("$H");
+        resetState();
+    }
+    
+    private void resetState() {
+        this.x = this.y = this.z = this.f = this.rpm = EMPTY;
+        this.units = null;
+        this.coordinates = null;
+        this.movementMode = null;
+    }
+
+    void setFeed(double feed) {
+        output.add(buildXYZF(EMPTY, EMPTY, EMPTY, feed));
+        this.f = feed;
     }
     
     private String buildXYZF(double... coords) {
@@ -136,8 +172,43 @@ public class GCodeGenerator {
         return BOTTOM_Z;
     }
 
+    public double getTopZ() {
+        return TOP_Z;
+    }
+
     public List<String> getOutput() {
         return Collections.unmodifiableList(output);
     }
+
+    public double getX() {
+        return x;
+    }
+
+    public double getY() {
+        return y;
+    }
+
+    public double getZ() {
+        return z;
+    }
+
+    public double getF() {
+        return f;
+    }
+
+    public double getRpm() {
+        return rpm;
+    }
     
+    public Units getUnits() {
+        return units;
+    }
+
+    public Coordinates getCoordinates() {
+        return coordinates;
+    }
+
+    public MovementMode getMovementMode() {
+        return movementMode;
+    }
 }

@@ -23,6 +23,8 @@
  */
 package drawandcut;
 
+import static drawandcut.Configuration.DOC;
+import static drawandcut.Configuration.PLUNGE_FEED;
 import drawandcut.cutter.CutterConnection;
 import static drawandcut.Configuration.TARGET_FEED;
 import static drawandcut.Configuration.TARGET_RPM;
@@ -40,6 +42,7 @@ import javafx.stage.Stage;
  * @author akouznet
  */
 public class DrawAndCut extends Application {
+    private CutterConnection cutterConnection;
 
     /**
      * @param args the command line arguments
@@ -58,11 +61,12 @@ public class DrawAndCut extends Application {
             if (drawing == null) {
                 return;
             }
-            List<String> output = new PathConverter(drawing.getPath(), TARGET_RPM, TARGET_FEED).getOutput();
+            List<String> output = new PathConverter(drawing.getPath(), TARGET_RPM, TARGET_FEED, DOC, PLUNGE_FEED).getOutput();
             System.out.println("Program:");
             for(String line : output) {
                 System.out.println(line);
             }
+            cutterConnection.getCutter().sendSequence(output.toArray(new String[output.size()]));
         });
         
         BorderPane borderPane = new BorderPane(drawPane);
@@ -70,10 +74,11 @@ public class DrawAndCut extends Application {
         
         primaryStage.setTitle("JavaOne2016 - Draw and Cut demo");
         primaryStage.setScene(new Scene(borderPane));
-//        primaryStage.show();
-//        primaryStage.setMaximized(true);
+        primaryStage.show();
+        primaryStage.setMaximized(true);
         
-        new CutterConnection().connectToCutter();
+        cutterConnection = new CutterConnection();        
+        cutterConnection.connectToCutter();
     }
     
 }

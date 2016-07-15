@@ -28,18 +28,25 @@ package drawandcut;
  * @author akouznet
  */
 public class Configuration {
+    public static final double IN = 25.4; // mm
     
     public static final double MATERIAL_SIZE_X = 198; // mm
     public static final double MATERIAL_SIZE_Y = 178; // mm
+    public static final double MATERIAL_SIZE_Z = 1/8. * IN; // mm
     public static final double MATERIAL_SIZE_RATIO = MATERIAL_SIZE_X / MATERIAL_SIZE_Y;
     
-    public static final double IN = 25.4; // mm
-    
+    public static final double MATERIAL_BASE_X = 0; // mm
+    public static final double MATERIAL_BASE_Y = 0; // mm
+    public static final double MATERIAL_BASE_Z = 0; // mm
+            
     public static final double TOOL_DIAMETER = 1/8. * IN; // mm
     
     public static final double LINE_WIDTH_MM = 4 * TOOL_DIAMETER; // mm
     
-    public static final int TARGET_RPM = 10000;
-    public static final double TARGET_FEED = 60;
+    public static final int TARGET_RPM = 9000; // rpm
+    public static final double TARGET_FEED = 44 * IN; // mmpm
+    public static final double PLUNGE_FEED = 14 * IN; // mmpm
+    public static final double DOC = 0.019 * IN; // mm
     
+    public static final double PROBING_OFFSET = 0.81; // mm (delta between probing Z and coordinate 0)
 }

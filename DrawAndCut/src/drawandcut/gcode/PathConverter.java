@@ -23,8 +23,8 @@
  */
 package drawandcut.gcode;
 
+import drawandcut.Configuration;
 import java.util.List;
-import javafx.geometry.Bounds;
 import javafx.scene.shape.ClosePath;
 import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
@@ -36,36 +36,65 @@ import javafx.scene.shape.PathElement;
  * @author akouznet
  */
 public class PathConverter {
-
+    
     private final GCodeGenerator gcg = new GCodeGenerator();
     private final Path path;
-    private final double targetFeed;
+    private final double feed;
+    private final double plungeFeed;
+    private final double doc;
     private double startX;
     private double startY;
 
-    public PathConverter(Path input, int targetRPM, double targetFeed) {
-        this.targetFeed = targetFeed;
+    public PathConverter(Path input, int rpm, double feed, double doc, double plungeFeed) {
+        this.feed = feed;
         this.path = input;
-        gcg.init(targetRPM);
+        this.plungeFeed = plungeFeed;
+        this.doc = doc;
+        gcg.init(rpm);        
         processPath();
-        gcg.rapidZ(gcg.getSafeZ());
         gcg.spindleStop();
+        gcg.goHome();
         gcg.programEnd();
     }
 
     private void processPath() {
-        Bounds boundsInLocal = path.getBoundsInLocal();
-        System.out.println("path.getBoundsInLocal() = " + boundsInLocal);
+        int zSteps = (int) Math.ceil(Configuration.MATERIAL_SIZE_Z / doc);
+//        System.out.println("zSteps = " + zSteps);
+        double oldZ = gcg.getTopZ();
+//        System.out.println("oldZ = " + oldZ);
+        for (int i = 1; i <= zSteps; i++) {
+            double newZ = (gcg.getBottomZ() * i + gcg.getTopZ() * (zSteps - i)) / zSteps;
+//            System.out.println("newZ = " + newZ);
+            assert Math.abs(newZ - oldZ) < doc;
+            assert newZ <= gcg.getTopZ();
+            assert newZ >= gcg.getBottomZ();
+            processPathInXY(newZ);
+            oldZ = newZ;
+        }
+        gcg.rapidZ(gcg.getSafeZ());        
+    }
+    
+    private void processPathInXY(double targetZ) {
+//        Bounds boundsInLocal = path.getBoundsInLocal();
+//        System.out.println("path.getBoundsInLocal() = " + boundsInLocal);
         startX = Double.NaN;
         startY = Double.NaN;
         for (PathElement pe : path.getElements()) {
             if (pe instanceof MoveTo) {
                 MoveTo mt = MoveTo.class.cast(pe);
-                gcg.rapidZ(gcg.getSafeZ());
                 startX = mt.getX();
                 startY = mt.getY();
-                gcg.rapid(convertX(startX), convertY(startY), gcg.getSafeZ());
-                gcg.linearZF(gcg.getBottomZ(), targetFeed);
+                double x = convertX(startX);
+                double y = convertY(startY);
+                if (gcg.getZ() < gcg.getSafeZ() || x != gcg.getX() || y != gcg.getY()) {
+                    if (!Double.isNaN(gcg.getZ())) {
+                        gcg.rapidZ(gcg.getSafeZ());
+                    }
+                    gcg.rapid(x, y, gcg.getSafeZ());
+                    gcg.rapidZ(gcg.getTopZ() + 1);
+                }
+                gcg.linearZF(targetZ, plungeFeed);
+                gcg.setFeed(feed);
             } else if (pe instanceof LineTo) {
                 assertStarted();
                 LineTo lt = LineTo.class.cast(pe);
@@ -77,7 +106,7 @@ public class PathConverter {
                 throw new IllegalArgumentException("Unsupported path element: "
                         + pe);
             }
-        }
+        }        
     }
     
     private void assertStarted() {

@@ -54,5 +54,8 @@ public class CutterConnection {
                     .log(Level.SEVERE, null, ex);
         }
     }
-    
+
+    public Cutter getCutter() {
+        return cutter;
+    }
 }

@@ -28,6 +28,7 @@ import com.willwinder.universalgcodesender.listeners.ControllerListener;
 import com.willwinder.universalgcodesender.model.Position;
 import com.willwinder.universalgcodesender.model.UGSEvent;
 import com.willwinder.universalgcodesender.types.GcodeCommand;
+import static drawandcut.Configuration.PROBING_OFFSET;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -68,6 +69,7 @@ public class Cutter {
     private final String[] PROBE3 = { "G0 Z-5", "X-5" };
     private final String COORDINATE_RESET_TEMPLATE = "G10 P0 L20 X220 Y205"; // Z is added based on PRB_Z
     private final String[] COORDINATE_RESET = { COORDINATE_RESET_TEMPLATE };
+    private double prbZ = Double.NaN; // Tool measurement Z
 
     private class CutterListener implements ControllerListener {
 
@@ -99,7 +101,14 @@ public class Cutter {
                     initState = InitSequenceState.READY;
                     break;
             }
+            printState();
+        }
+
+        public void printState() {
             System.out.println("initState = " + initState);
+            System.out.println("state = " + state);
+            System.out.println("workCoord = " + workCoord);
+            System.out.println("machineCoord = " + machineCoord);
         }
 
         @Override
@@ -132,7 +141,7 @@ public class Cutter {
                         sendSequence(PROBE1);
                         break;
                 }
-                System.out.println("initState = " + initState);
+                printState();
             } catch (Exception ex) {
                 Logger.getLogger(Cutter.class.getName()).log(Level.SEVERE, null,
                         ex);
@@ -160,12 +169,12 @@ public class Cutter {
                 String pattern = "message='\\[PRB\\:-[0-9]*\\.[0-9]*,-[0-9]*\\.[0-9]*,(-[0-9]*\\.[0-9]*)\\:1\\]'";
                 Matcher matcher = Pattern.compile(pattern).matcher(msg);
                 if (matcher.find()) {
-                    System.out.println("matcher = " + matcher);
-                    System.out.println("matcher.group(1) = " + matcher.group(1));
-                    double PRB_Z = Double.parseDouble(matcher.group(1));
-                    System.out.println("PRB_Z = " + PRB_Z);
-                    COORDINATE_RESET[0] = COORDINATE_RESET_TEMPLATE + " Z" + (0.81 - PRB_Z);
-                    System.out.println("COORDINATE_RESET[0] = " + COORDINATE_RESET[0]);
+//                    System.out.println("matcher = " + matcher);
+//                    System.out.println("matcher.group(1) = " + matcher.group(1));
+                    prbZ = Double.parseDouble(matcher.group(1));
+                    System.out.println("prbZ = " + prbZ);
+                    COORDINATE_RESET[0] = COORDINATE_RESET_TEMPLATE + " Z" + (PROBING_OFFSET - prbZ);
+//                    System.out.println("COORDINATE_RESET[0] = " + COORDINATE_RESET[0]);
                 }
             }
         }
@@ -186,7 +195,7 @@ public class Cutter {
 
     }
 
-    private void sendSequence(String[] sequence) {
+    public void sendSequence(String[] sequence) {
         try {
             for (String command : sequence) {
                 // I've tried sendImmediately here but it is not very reliable
