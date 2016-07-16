@@ -1,0 +1,6 @@
+/DrawAndCut/lib/Universal-G-Code-Sender/lib/*.jar
+/DrawAndCut/lib/Universal-G-Code-Sender/ugs-core/src/resources/pendantUI/
+/DrawAndCut/lib/Universal-G-Code-Sender/ugs-core/src/resources/*.ttf
+/DrawAndCut/dist/
+DrawAndCut/build/
+DrawAndCut/nbproject/private/
