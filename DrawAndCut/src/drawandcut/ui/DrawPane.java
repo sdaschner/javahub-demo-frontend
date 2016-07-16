@@ -45,6 +45,7 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
 import static drawandcut.Configuration.LINE_WIDTH_MM;
+import drawandcut.path.Outliner;
 
 /**
  *
@@ -146,6 +147,21 @@ public class DrawPane extends StackPane {
             return;
         }
         drawing.get().stop(x, y);
+        
+        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(80, 25), new LineTo(100, 50), new LineTo(0, 50), new ClosePath());
+        Outliner outliner = new Outliner(path);
+//        Outliner outliner = new Outliner(drawing.get().getPath());
+        Path outline = outliner.generateOutline();
+        outline.setStrokeWidth(1 / pxPerMm);
+        outline.setStroke(Color.RED);
+        outline.setStrokeLineJoin(StrokeLineJoin.ROUND);
+        outline.setStrokeLineCap(StrokeLineCap.ROUND);
+        outline.setScaleX(pxPerMm);
+        outline.setScaleY(-pxPerMm);
+        getChildren().add(outline);
+//        canvas.getGraphicsContext2D().setStroke(Color.RED);
+//        canvas.getGraphicsContext2D().scale(pxPerMm, pxPerMm);
+//        canvas.getGraphicsContext2D().
     }
     
     public class Drawing {

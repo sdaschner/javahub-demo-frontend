@@ -29,12 +29,17 @@ import drawandcut.cutter.CutterConnection;
 import static drawandcut.Configuration.TARGET_FEED;
 import static drawandcut.Configuration.TARGET_RPM;
 import drawandcut.gcode.PathConverter;
+import drawandcut.path.Outliner;
 import drawandcut.ui.ControlPane;
 import drawandcut.ui.DrawPane;
 import java.util.List;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.shape.ClosePath;
+import javafx.scene.shape.LineTo;
+import javafx.scene.shape.MoveTo;
+import javafx.scene.shape.Path;
 import javafx.stage.Stage;
 
 /**
@@ -78,7 +83,11 @@ public class DrawAndCut extends Application {
         primaryStage.setMaximized(true);
         
         cutterConnection = new CutterConnection();        
-        cutterConnection.connectToCutter();
+//        cutterConnection.connectToCutter();
+
+//        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(0, 50), new ClosePath());
+//        Outliner outliner = new Outliner(path);
+//        Path outline = outliner.generateOutline();
     }
     
 }
