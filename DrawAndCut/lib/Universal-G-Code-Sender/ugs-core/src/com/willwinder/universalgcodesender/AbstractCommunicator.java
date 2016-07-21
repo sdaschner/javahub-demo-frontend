@@ -44,7 +44,7 @@ public abstract class AbstractCommunicator {
     private int commandCounter = 0;
 
     // Allow events to be sent from same thread for unit tests.
-    private boolean launchEventsInDispatchThread = true;
+    private boolean launchEventsInDispatchThread = false;
 
     // Serial Communicator Listener Events
     enum SerialCommunicatorEvent {

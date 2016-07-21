@@ -30,8 +30,8 @@ package drawandcut;
 public class Configuration {
     public static final double IN = 25.4; // mm
     
-    public static final double MATERIAL_SIZE_X = 198; // mm
-    public static final double MATERIAL_SIZE_Y = 178; // mm
+    public static final double MATERIAL_SIZE_X = 200; //198; // mm
+    public static final double MATERIAL_SIZE_Y = 197; //178; // mm
     public static final double MATERIAL_SIZE_Z = 1/8. * IN; // mm
     public static final double MATERIAL_SIZE_RATIO = MATERIAL_SIZE_X / MATERIAL_SIZE_Y;
     
@@ -45,8 +45,13 @@ public class Configuration {
     
     public static final int TARGET_RPM = 9000; // rpm
     public static final double TARGET_FEED = 44 * IN; // mmpm
+//    public static final double TARGET_FEED = 65 * IN; // mmpm
     public static final double PLUNGE_FEED = 14 * IN; // mmpm
-    public static final double DOC = 0.019 * IN; // mm
+//    public static final double DOC = 0.019 * IN; // mm
+    public static final double DOC = 0.125 / 5 * IN; // mm
+//    public static final double DOC = 0.125 / 7 * IN; // mm
+    public static final double Z_ACCURACY = 0.01; // mm
     
     public static final double PROBING_OFFSET = 0.81; // mm (delta between probing Z and coordinate 0)
+    public static final String PORT_NAME = System.getProperty("portName", "COM4");
 }

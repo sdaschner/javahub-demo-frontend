@@ -24,6 +24,8 @@
 package drawandcut.gcode;
 
 import drawandcut.Configuration;
+import static drawandcut.Configuration.MATERIAL_SIZE_Z;
+import static drawandcut.Configuration.Z_ACCURACY;
 import java.util.List;
 import javafx.scene.shape.ClosePath;
 import javafx.scene.shape.LineTo;
@@ -58,16 +60,18 @@ public class PathConverter {
     }
 
     private void processPath() {
-        int zSteps = (int) Math.ceil(Configuration.MATERIAL_SIZE_Z / doc);
-//        System.out.println("zSteps = " + zSteps);
+        int zSteps = (int) Math.ceil(MATERIAL_SIZE_Z / doc);
+        System.out.println("zSteps = " + zSteps);
         double oldZ = gcg.getTopZ();
-//        System.out.println("oldZ = " + oldZ);
+        System.out.println("oldZ = " + oldZ);
         for (int i = 1; i <= zSteps; i++) {
             double newZ = (gcg.getBottomZ() * i + gcg.getTopZ() * (zSteps - i)) / zSteps;
-//            System.out.println("newZ = " + newZ);
-            assert Math.abs(newZ - oldZ) < doc;
-            assert newZ <= gcg.getTopZ();
-            assert newZ >= gcg.getBottomZ();
+            System.out.println("newZ = " + newZ);
+            System.out.println("Math.abs(newZ - oldZ) = " + Math.abs(newZ - oldZ));
+            System.out.println("doc = " + doc);
+            assert Math.abs(newZ - oldZ) < doc + Z_ACCURACY;
+            assert newZ <= gcg.getTopZ() + Z_ACCURACY;
+            assert newZ >= gcg.getBottomZ() - Z_ACCURACY;
             processPathInXY(newZ);
             oldZ = newZ;
         }
@@ -87,7 +91,7 @@ public class PathConverter {
                 double x = convertX(startX);
                 double y = convertY(startY);
                 if (gcg.getZ() < gcg.getSafeZ() || x != gcg.getX() || y != gcg.getY()) {
-                    if (!Double.isNaN(gcg.getZ())) {
+                    if (!Double.isNaN(gcg.getZ()) || gcg.getZ() < gcg.getSafeZ()) {
                         gcg.rapidZ(gcg.getSafeZ());
                     }
                     gcg.rapid(x, y, gcg.getSafeZ());

@@ -23,11 +23,8 @@
  */
 package drawandcut.cutter;
 
+import drawandcut.Configuration;
 import com.willwinder.universalgcodesender.GrblController;
-import com.willwinder.universalgcodesender.listeners.ControllerListener;
-import com.willwinder.universalgcodesender.model.Position;
-import com.willwinder.universalgcodesender.model.UGSEvent;
-import com.willwinder.universalgcodesender.types.GcodeCommand;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,7 +42,7 @@ public class CutterConnection {
         try {
             grblController = new GrblController();
             cutter.bindToController(grblController);
-            Boolean openCommPort = grblController.openCommPort("COM4", 115200);
+            Boolean openCommPort = grblController.openCommPort(Configuration.PORT_NAME, 115200);
             if (openCommPort != true) {
                 throw new IllegalStateException("Cannot open connection to the cutter");
             }

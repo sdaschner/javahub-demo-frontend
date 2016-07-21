@@ -46,6 +46,8 @@ import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
 import static drawandcut.Configuration.LINE_WIDTH_MM;
 import drawandcut.path.Outliner;
+import javafx.scene.transform.Scale;
+import javafx.scene.transform.Translate;
 
 /**
  *
@@ -135,7 +137,6 @@ public class DrawPane extends StackPane {
             return;
         }
         drawing.get().continueTo(x, y);
-        canvas.getGraphicsContext2D().lineTo(x, y);
     }
     
     private void stopDrawing(InputEvent e) {
@@ -147,28 +148,19 @@ public class DrawPane extends StackPane {
             return;
         }
         drawing.get().stop(x, y);
-        
-        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(80, 25), new LineTo(100, 50), new LineTo(0, 50), new ClosePath());
-        Outliner outliner = new Outliner(path);
-//        Outliner outliner = new Outliner(drawing.get().getPath());
-        Path outline = outliner.generateOutline();
-        outline.setStrokeWidth(1 / pxPerMm);
-        outline.setStroke(Color.RED);
-        outline.setStrokeLineJoin(StrokeLineJoin.ROUND);
-        outline.setStrokeLineCap(StrokeLineCap.ROUND);
-        outline.setScaleX(pxPerMm);
-        outline.setScaleY(-pxPerMm);
-        getChildren().add(outline);
-//        canvas.getGraphicsContext2D().setStroke(Color.RED);
-//        canvas.getGraphicsContext2D().scale(pxPerMm, pxPerMm);
-//        canvas.getGraphicsContext2D().
     }
+    
+    private Path outline;
     
     public class Drawing {
         private Path p = new Path();
 
         private Drawing(double x, double y) {
             p.getElements().add(new MoveTo(convertX(x), convertY(y)));
+            if (outline != null) {
+                getChildren().remove(outline);
+                outline = null;
+            }
             canvas.getGraphicsContext2D().clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
             canvas.getGraphicsContext2D().beginPath();
             canvas.getGraphicsContext2D().moveTo(x, y);
@@ -186,6 +178,7 @@ public class DrawPane extends StackPane {
             canvas.getGraphicsContext2D().lineTo(x, y);
             canvas.getGraphicsContext2D().closePath();
             canvas.getGraphicsContext2D().stroke();
+            generateOutline();
         }
         
         private double convertX(double x) {
@@ -199,7 +192,30 @@ public class DrawPane extends StackPane {
         public Path getPath() {
             return new Path(p.getElements());
         }
+
+        public Path getOutline() {
+            return outline;
+        }
         
+        private void generateOutline() {
+    //        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(80, 25), new LineTo(100, 50), new LineTo(0, 50), new ClosePath());
+    //        Outliner outliner = new Outliner(path);
+            Outliner outliner = new Outliner(drawing.get().getPath());
+            outline = outliner.generateOutline();
+            outline.setStrokeWidth(Configuration.TOOL_DIAMETER);
+            outline.setStroke(Color.BLACK);
+            outline.setStrokeLineJoin(StrokeLineJoin.ROUND);
+            outline.setStrokeLineCap(StrokeLineCap.ROUND);
+            outline.getTransforms().addAll(
+                    new Translate(0, -Configuration.MATERIAL_SIZE_Y), 
+                    new Scale(pxPerMm, -pxPerMm, 0, Configuration.MATERIAL_SIZE_Y));
+            canvas.getGraphicsContext2D().clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+            getChildren().add(outline);
+            outline.setMouseTransparent(true);
+            outline.setManaged(false);
+            outline.layoutXProperty().bind(canvas.layoutXProperty());
+            outline.layoutYProperty().bind(canvas.layoutYProperty());
+        }
     }
 
     public ObjectProperty<Drawing> drawingProperty() {

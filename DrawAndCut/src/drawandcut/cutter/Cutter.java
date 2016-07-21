@@ -29,10 +29,12 @@ import com.willwinder.universalgcodesender.model.Position;
 import com.willwinder.universalgcodesender.model.UGSEvent;
 import com.willwinder.universalgcodesender.types.GcodeCommand;
 import static drawandcut.Configuration.PROBING_OFFSET;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javafx.application.Platform;
 
 /**
  *
@@ -65,8 +67,8 @@ public class Cutter {
     }
     
     private final String[] PROBE1 = { "G4P0.005", "M05", "G92.1", "G54", "G10 L2 P1 X0 Y0 Z0", "G21", "G49", "G90", "G10 L2 P1 X0 Y0 Z0", "G0 X-2.5 Z-5", "G0 Z-35.000", "G38.2Z-105 F800", "G4P0.005" };
-    private final String[] PROBE2 = { "G0Z-79.675", "G38.2Z-182.675F200.0", "G4P0.005" };
-    private final String[] PROBE3 = { "G0 Z-5", "X-5" };
+    private final String[] PROBE2 = { "G0 Z-70", "G38.2Z-182.675F200.0", "G4P0.005" };
+    private final String[] PROBE3 = { "G0 Z-5", "G0 X-5" };
     private final String COORDINATE_RESET_TEMPLATE = "G10 P0 L20 X220 Y205"; // Z is added based on PRB_Z
     private final String[] COORDINATE_RESET = { COORDINATE_RESET_TEMPLATE };
     private double prbZ = Double.NaN; // Tool measurement Z
@@ -82,26 +84,33 @@ public class Cutter {
         @Override
         public void fileStreamComplete(String filename, boolean success) {
             System.out.println(
-                    "ControllerListener.fileStreamComplete filename = "
+                    "ControllerListener.fileStreamComplete-1 filename = "
                     + filename + ", success = " + success);
-            switch (initState) {
-                case PROBING1:
-                    initState = InitSequenceState.PROBING2;
-                    sendSequence(PROBE2);
-                    break;
-                case PROBING2:
-                    initState = InitSequenceState.PROBING3;
-                    sendSequence(PROBE3);
-                    break;
-                case PROBING3:
-                    initState = InitSequenceState.COORDINATE_RESET;
-                    sendSequence(COORDINATE_RESET);
-                    break;
-                case COORDINATE_RESET:
-                    initState = InitSequenceState.READY;
-                    break;
-            }
-            printState();
+            Platform.runLater(() -> {
+                System.out.println(
+                        "ControllerListener.fileStreamComplete-2 filename = "
+                        + filename + ", success = " + success);
+                switch (initState) {
+                    case PROBING1:
+                        initState = InitSequenceState.PROBING2;
+                        PROBE2[0] = "G0Z" + (machineCoord.z + 5);
+                        System.out.println("PROBE2 = " + Arrays.toString(PROBE2));
+                        sendSequence(PROBE2);
+                        break;
+                    case PROBING2:
+                        initState = InitSequenceState.PROBING3;
+                        sendSequence(PROBE3);
+                        break;
+                    case PROBING3:
+                        initState = InitSequenceState.COORDINATE_RESET;
+                        sendSequence(COORDINATE_RESET);
+                        break;
+                    case COORDINATE_RESET:
+                        initState = InitSequenceState.READY;
+                        break;
+                }
+                printState();
+            });
         }
 
         public void printState() {

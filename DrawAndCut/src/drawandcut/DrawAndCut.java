@@ -23,6 +23,7 @@
  */
 package drawandcut;
 
+import com.google.common.io.Files;
 import static drawandcut.Configuration.DOC;
 import static drawandcut.Configuration.PLUNGE_FEED;
 import drawandcut.cutter.CutterConnection;
@@ -32,7 +33,13 @@ import drawandcut.gcode.PathConverter;
 import drawandcut.path.Outliner;
 import drawandcut.ui.ControlPane;
 import drawandcut.ui.DrawPane;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
@@ -66,10 +73,16 @@ public class DrawAndCut extends Application {
             if (drawing == null) {
                 return;
             }
-            List<String> output = new PathConverter(drawing.getPath(), TARGET_RPM, TARGET_FEED, DOC, PLUNGE_FEED).getOutput();
+            List<String> output = new PathConverter(drawing.getOutline(), TARGET_RPM, TARGET_FEED, DOC, PLUNGE_FEED).getOutput();
             System.out.println("Program:");
             for(String line : output) {
                 System.out.println(line);
+            }
+            try {
+                Files.write(output.stream().collect(Collectors.joining("\n")), new File("output.wc"), Charset.defaultCharset());
+            } catch (IOException ex) {
+                Logger.getLogger(DrawAndCut.class.getName())
+                        .log(Level.SEVERE, null, ex);
             }
             cutterConnection.getCutter().sendSequence(output.toArray(new String[output.size()]));
         });
@@ -83,7 +96,7 @@ public class DrawAndCut extends Application {
         primaryStage.setMaximized(true);
         
         cutterConnection = new CutterConnection();        
-//        cutterConnection.connectToCutter();
+        cutterConnection.connectToCutter();
 
 //        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(0, 50), new ClosePath());
 //        Outliner outliner = new Outliner(path);

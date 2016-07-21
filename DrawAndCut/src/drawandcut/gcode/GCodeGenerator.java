@@ -73,7 +73,10 @@ public class GCodeGenerator {
     
     public void rapid(double x, double y, double z) {
         output.add("G0" + buildXYZF(x, y, z));
-        this.x = x; this.y = y; this.z = z; this.movementMode = MovementMode.RAPID;
+        this.x = Double.isNaN(x) ? this.x : x; 
+        this.y = Double.isNaN(y) ? this.y : y; 
+        this.z = Double.isNaN(z) ? this.z : z;         
+        this.movementMode = MovementMode.RAPID;
     }
 
     public void linearZ(double z) {
@@ -94,7 +97,10 @@ public class GCodeGenerator {
 
     public void linear(double x, double y, double z, double f) {
         output.add("G1" + buildXYZF(x, y, z, f));
-        this.x = x; this.y = y; this.z = z; this.f = f; 
+        this.x = Double.isNaN(x) ? this.x : x; 
+        this.y = Double.isNaN(y) ? this.y : y; 
+        this.z = Double.isNaN(z) ? this.z : z; 
+        this.f = Double.isNaN(f) ? this.f : f; 
         this.movementMode = MovementMode.LINEAR;
     }
 
