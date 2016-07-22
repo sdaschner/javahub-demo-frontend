@@ -55,6 +55,7 @@ public class Configuration {
     
     public static final double PROBING_OFFSET = 0.81; // mm (delta between probing Z and coordinate 0)
     public static final String PORT_NAME = System.getProperty("portName", "COM4");
+    public static final double FLATNESS = 0.01; // mm
     
     static {
         System.out.println("Configuration summary:");

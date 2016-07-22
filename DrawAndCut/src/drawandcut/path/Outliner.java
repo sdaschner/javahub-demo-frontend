@@ -23,14 +23,10 @@
  */
 package drawandcut.path;
 
-import com.esri.core.geometry.Geometry;
-import com.esri.core.geometry.OperatorBoundary;
-import com.esri.core.geometry.OperatorBuffer;
-import com.esri.core.geometry.Point;
-import com.esri.core.geometry.Polyline;
 import drawandcut.Configuration;
 import java.awt.BasicStroke;
 import java.awt.Shape;
+import java.awt.geom.Area;
 import java.awt.geom.Path2D;
 import java.awt.geom.PathIterator;
 import javafx.collections.ObservableList;
@@ -53,49 +49,60 @@ public class Outliner {
     }
     
     public Path generateOutline() {
-        Polyline path2D = convertToPolyline();
-        Geometry buffer = OperatorBuffer.local().execute(path2D, null, Configuration.LINE_WIDTH_MM / 2, null);
-        Geometry outlineGeom = OperatorBoundary.local().execute(buffer, null);
-
+        Path2D path2D = convertToPath2D();
+        BasicStroke basicStroke = new BasicStroke((float) Configuration.LINE_WIDTH_MM, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        Shape strokedShape = basicStroke.createStrokedShape(path2D);
+        Area area = new Area(strokedShape);
+        PathIterator pathIterator = area.getPathIterator(null, Configuration.FLATNESS);
         Path outline = new Path();
-        Polyline outlinePolyline = (Polyline) outlineGeom;
-        int pathCount = outlinePolyline.getPathCount();
+        int pathCount = 0;
+        double[] coords = new double[6];
+        while (!pathIterator.isDone()) {            
+            int segType = pathIterator.currentSegment(coords);
+            switch (segType) {
+                case PathIterator.SEG_CLOSE:
+                    outline.getElements().add(new ClosePath());
+                    break;
+                case PathIterator.SEG_LINETO:
+                    outline.getElements().add(new LineTo(coords[0], coords[1]));
+                    break;
+                case PathIterator.SEG_MOVETO:
+                    outline.getElements().add(new MoveTo(coords[0], coords[1]));
+                    pathCount++;
+                    break;
+                case PathIterator.SEG_CUBICTO:
+                    outline.getElements().add(new CubicCurveTo(coords[0], coords[1],
+                            coords[2], coords[3], coords[4], coords[5]));
+                    break;
+                default:
+                    throw new UnsupportedOperationException("This segment type is not supported: " + segType);                    
+            }
+            pathIterator.next();
+        }
         System.out.println("pathCount = " + pathCount);
         if (pathCount != 2) {
             throw new IllegalArgumentException("The path cannot have intersections or have no interior outline");
         }   
-        
-        Point p = new Point();
-        for (int i = 0; i < pathCount; i++) {
-            int ps = outlinePolyline.getPathStart(i);
-            int pe = outlinePolyline.getPathEnd(i);
-            outlinePolyline.getPoint(ps, p);
-            outline.getElements().add(new MoveTo(p.getX(), p.getY()));
-            for (int j = ps + 1; j < pe; j++) {
-                outlinePolyline.getPoint(j, p);
-                outline.getElements().add(new LineTo(p.getX(), p.getY()));
-            }
-            outline.getElements().add(new ClosePath());
-        }
+//        System.out.println("path.getElements() = " + outline.getElements());
         return outline;
     }
 
-    private Polyline convertToPolyline() throws UnsupportedOperationException {
-        Polyline polyline = new Polyline();
+    private Path2D convertToPath2D() throws UnsupportedOperationException {
+        Path2D path2D = new Path2D.Double();
         ObservableList<PathElement> elements = path.getElements();
         for (PathElement element : elements) {
             if (element instanceof MoveTo) {
                 MoveTo mt = (MoveTo) element;
-                polyline.startPath(mt.getX(), mt.getY());
+                path2D.moveTo(mt.getX(), mt.getY());
             } else if (element instanceof LineTo) {
                 LineTo lt = (LineTo) element;
-                polyline.lineTo(lt.getX(), lt.getY());
+                path2D.lineTo(lt.getX(), lt.getY());
             } else if (element instanceof ClosePath) {
-                polyline.closePathWithLine();
+                path2D.closePath();
             } else {
                 throw new UnsupportedOperationException("This PathElement is not supported: " + element);
             }
         }
-        return polyline;
+        return path2D;
     }
 }
