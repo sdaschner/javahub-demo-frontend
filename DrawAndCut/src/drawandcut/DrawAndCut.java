@@ -26,10 +26,7 @@ package drawandcut;
 import static drawandcut.Configuration.DOC;
 import static drawandcut.Configuration.PLUNGE_FEED;
 import drawandcut.cutter.CutterConnection;
-import static drawandcut.Configuration.TARGET_FEED;
-import static drawandcut.Configuration.TARGET_RPM;
 import drawandcut.gcode.PathConverter;
-import drawandcut.path.Outliner;
 import drawandcut.ui.ControlPane;
 import drawandcut.ui.DrawPane;
 import java.io.File;
@@ -41,11 +38,9 @@ import java.util.logging.Logger;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.shape.ClosePath;
-import javafx.scene.shape.LineTo;
-import javafx.scene.shape.MoveTo;
-import javafx.scene.shape.Path;
 import javafx.stage.Stage;
+import static drawandcut.Configuration.FEED;
+import static drawandcut.Configuration.RPM;
 
 /**
  *
@@ -71,7 +66,7 @@ public class DrawAndCut extends Application {
             if (drawing == null) {
                 return;
             }
-            List<String> output = new PathConverter(drawing.getOutline(), TARGET_RPM, TARGET_FEED, DOC, PLUNGE_FEED).getOutput();
+            List<String> output = new PathConverter(drawing.getOutline(), RPM, FEED, DOC, PLUNGE_FEED).getOutput();
             System.out.println("Program:");
             for(String line : output) {
                 System.out.println(line);
@@ -92,6 +87,7 @@ public class DrawAndCut extends Application {
         primaryStage.setScene(new Scene(borderPane));
         primaryStage.show();
         primaryStage.setMaximized(true);
+        primaryStage.setOnCloseRequest(e -> System.exit(0));
         
         cutterConnection = new CutterConnection();        
         cutterConnection.connectToCutter();

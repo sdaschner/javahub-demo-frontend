@@ -30,8 +30,8 @@ package drawandcut;
 public class Configuration {
     public static final double IN = 25.4; // mm
     
-    public static final double MATERIAL_SIZE_X = 200; //198; // mm
-    public static final double MATERIAL_SIZE_Y = 197; //178; // mm
+    public static final double MATERIAL_SIZE_X = Double.parseDouble(System.getProperty("materialSizeX", "200")); // mm
+    public static final double MATERIAL_SIZE_Y = Double.parseDouble(System.getProperty("materialSizeY", "200")); // mm
     public static final double MATERIAL_SIZE_Z = 1/8. * IN; // mm
     public static final double MATERIAL_SIZE_RATIO = MATERIAL_SIZE_X / MATERIAL_SIZE_Y;
     
@@ -43,15 +43,27 @@ public class Configuration {
     
     public static final double LINE_WIDTH_MM = 4 * TOOL_DIAMETER; // mm
     
-    public static final int TARGET_RPM = 9000; // rpm
-    public static final double TARGET_FEED = 44 * IN; // mmpm
+    public static final int RPM = 9000; // rpm
+    public static final double FEED = 44 * IN; // mmpm
 //    public static final double TARGET_FEED = 65 * IN; // mmpm
     public static final double PLUNGE_FEED = 14 * IN; // mmpm
 //    public static final double DOC = 0.019 * IN; // mm
-    public static final double DOC = 0.125 / 5 * IN; // mm
+    public static final int NUMBER_OF_PASSES = Integer.parseInt(System.getProperty("numberOfPasses", "7"));
+    public static final double DOC = MATERIAL_SIZE_Z / NUMBER_OF_PASSES; // mm
 //    public static final double DOC = 0.125 / 7 * IN; // mm
     public static final double Z_ACCURACY = 0.01; // mm
     
     public static final double PROBING_OFFSET = 0.81; // mm (delta between probing Z and coordinate 0)
     public static final String PORT_NAME = System.getProperty("portName", "COM4");
+    
+    static {
+        System.out.println("Configuration summary:");
+        System.out.printf("Material size (X x Y x Z): %.1f x %.1f x %.3f mm\n", MATERIAL_SIZE_X, MATERIAL_SIZE_Y, MATERIAL_SIZE_Z);
+        System.out.printf("Number of passes: %d. Depth of one cut: %.3f mm\n", NUMBER_OF_PASSES, DOC);
+        System.out.printf("RPM: %d. Feed: %.0f mmpm, plunge feed: %.0f mmpm\n", RPM, FEED, PLUNGE_FEED);
+        
+        System.out.printf("Material size (X x Y x Z): %.2f x %.2f x %.3f in\n", MATERIAL_SIZE_X / IN, MATERIAL_SIZE_Y / IN, MATERIAL_SIZE_Z / IN);
+        System.out.printf("Number of passes: %d. Depth of one cut: %.4f in\n", NUMBER_OF_PASSES, DOC / IN);
+        System.out.printf("RPM: %d. Feed: %.1f ipm, plunge feed: %.1f ipm\n", RPM, FEED / IN, PLUNGE_FEED / IN);
+    }
 }
