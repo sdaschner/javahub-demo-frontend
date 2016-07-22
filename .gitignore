@@ -5,3 +5,6 @@
 DrawAndCut/build/
 DrawAndCut/nbproject/private/
 DrawAndCut/output.wc
+DrawAndCut/lib/Universal-G-Code-Sender.success-Ken-demo/
+DrawAndCut/lib/Universal-G-Code-Sender/lib/natives/arm/libgluegen-rt.so
+DrawAndCut/lib/Universal-G-Code-Sender/lib/

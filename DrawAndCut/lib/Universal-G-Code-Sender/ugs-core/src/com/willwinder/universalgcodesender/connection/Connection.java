@@ -48,6 +48,4 @@ public abstract class Connection {
     abstract public void sendByteImmediately(byte b) throws Exception;
     
     abstract public void sendStringToComm(String command) throws Exception;
-
-    abstract public boolean isOpen();
 }

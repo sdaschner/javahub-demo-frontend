@@ -26,11 +26,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.willwinder.universalgcodesender.gcode.TinyGGcodeCommandCreator;
 import com.willwinder.universalgcodesender.i18n.Localization;
-import com.willwinder.universalgcodesender.model.Overrides;
-import com.willwinder.universalgcodesender.model.Position;
 import com.willwinder.universalgcodesender.model.Utils.Units;
 import com.willwinder.universalgcodesender.types.TinyGGcodeCommand;
-import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import javax.vecmath.Point3d;
@@ -40,15 +37,12 @@ import javax.vecmath.Point3d;
  * @author wwinder
  */
 public class TinyGController extends AbstractController {
-
-    private static final String NOT_SUPPORTED_YET = "Not supported yet.";
-
-    private boolean isReady = false;
-    private Units units;
-
-    private String state = "";
-    private Position machineLocation = new Position();
-    private Position workLocation = new Position();
+    boolean isReady = false;
+    Units units;
+    
+    String state = "";
+    Point3d machineLocation = new Point3d();
+    Point3d workLocation = new Point3d();
     
     protected TinyGController(TinyGCommunicator comm) {
         super(comm);
@@ -62,18 +56,18 @@ public class TinyGController extends AbstractController {
     }
 
     @Override
-    public long getJobLengthEstimate(File gcodeFile) {
-        return 0;
+    public long getJobLengthEstimate(Collection<String> jobLines) {
+        return 0;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
     @Override
     protected void closeCommBeforeEvent() {
-        //throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
+        //throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     protected void closeCommAfterEvent() {
-        //throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
+        //throw new UnsupportedOperationException("Not supported yet.");
     }
     
     @Override
@@ -84,22 +78,22 @@ public class TinyGController extends AbstractController {
 
     @Override
     protected void cancelSendBeforeEvent() {
-        throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     protected void cancelSendAfterEvent() {
-        throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     protected void pauseStreamingEvent() throws IOException {
-        throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     protected void resumeStreamingEvent() throws IOException {
-        throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
 
@@ -151,66 +145,61 @@ public class TinyGController extends AbstractController {
 
     @Override
     public void performHomingCycle() throws Exception {
-        throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
+        throw new UnsupportedOperationException("Not supported yet.");
     }
     
     @Override
     public void resetCoordinatesToZero() throws Exception {
-        throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
+        throw new UnsupportedOperationException("Not supported yet.");
     }
     
     @Override
     public void returnToHome() throws Exception {
-        throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public void killAlarmLock() throws Exception {
-        throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public void toggleCheckMode() throws Exception {
-        throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public void viewParserState() throws Exception {
-        throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public void softReset() throws Exception {
-        throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
-    }
-
-    @Override
-    protected void isReadyToStreamCommandsEvent() throws Exception {
-        //throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     protected void isReadyToSendCommandsEvent() throws Exception {
-        //throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
+        //throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     protected void statusUpdatesEnabledValueChanged(boolean enabled) {
-        throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     protected void statusUpdatesRateValueChanged(int rate) {
-        throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public void sendOverrideCommand(Overrides command) throws Exception {
-        throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
+    public void currentUnits(Units units) {
+        this.units = units;
     }
-
+    
     static class TinyGUtils {
-        private static JsonParser parser = new JsonParser();
+        static JsonParser parser = new JsonParser();
         
         private static JsonObject jsonToObject(String response) {            
             return parser.parse(response).getAsJsonObject();
@@ -263,9 +252,9 @@ public class TinyGController extends AbstractController {
         }
         
         private static class StatusResult {
-            private Point3d machine = new Point3d();
-            private Point3d work = new Point3d();
-            private String state;
+            Point3d machine = new Point3d();
+            Point3d work = new Point3d();
+            String state;
         }
         private static StatusResult updateStatus(JsonObject response) {
             StatusResult result = new StatusResult();

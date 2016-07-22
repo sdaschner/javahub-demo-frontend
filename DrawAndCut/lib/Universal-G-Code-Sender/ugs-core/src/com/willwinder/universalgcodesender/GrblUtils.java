@@ -23,12 +23,11 @@
 
 package com.willwinder.universalgcodesender;
 
-import com.willwinder.universalgcodesender.model.Overrides;
-import com.willwinder.universalgcodesender.model.Position;
 import com.willwinder.universalgcodesender.model.Utils.Units;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.vecmath.Point3d;
 
 /**
  *
@@ -50,7 +49,6 @@ public class GrblUtils {
     public static final String GRBL_KILL_ALARM_LOCK_COMMAND = "$X";
     public static final String GRBL_TOGGLE_CHECK_MODE_COMMAND = "$C";
     public static final String GRBL_VIEW_PARSER_STATE_COMMAND = "$G";
-    public static final String GRBL_VIEW_SETTINGS_COMMAND = "$$";
     
     /**
      * Gcode Commands
@@ -69,9 +67,8 @@ public class GrblUtils {
     public static final String GCODE_PERFORM_HOMING_CYCLE_V8 = "G28 X0 Y0 Z0";
     public static final String GCODE_PERFORM_HOMING_CYCLE_V8C = "$H";
     
-    public static class Capabilities {
-        public boolean REAL_TIME = false;
-        public boolean OVERRIDES = false;
+    public enum Capabilities {
+        REAL_TIME, STATUS_C
     }
     
     /** 
@@ -231,41 +228,30 @@ public class GrblUtils {
      * Determines version of GRBL position capability.
      */
     static protected Capabilities getGrblStatusCapabilities(final double version, final String letter) {
-        Capabilities ret = new Capabilities();
-
-        if (version >= 1.0) {
-            ret.REAL_TIME = true;
-            ret.OVERRIDES = true;
-        }
-
-        else if (version >= 0.8) {
+        if (version >= 0.8) {
             if (version==0.8 && (letter != null) && letter.equals("c")) {
-                ret.REAL_TIME = true;
+                return Capabilities.STATUS_C;
             } else if (version >= 0.9) {
-                ret.REAL_TIME = true;
+                return Capabilities.STATUS_C;
             }
         }
-        return ret;
+        return null;
     }
     
     /**
      * Check if a string contains a GRBL position string.
      */
-    private static final String STATUS_REGEX = "\\<.*\\>";
-    private static final Pattern STATUS_PATTERN = Pattern.compile(STATUS_REGEX);
     static protected Boolean isGrblStatusString(final String response) {
-        return STATUS_PATTERN.matcher(response).find();
-    }
-
-    private static final String FEEDBACK_REGEX = "[.*]";
-    private static final Pattern FEEDBACK_PATTERN = Pattern.compile(FEEDBACK_REGEX);
-    static protected Boolean isGrblFeedbackMessage(final String response) {
-        return FEEDBACK_PATTERN.matcher(response).find();
-    }
-
-
-    static protected Boolean isGrblSettingMessage(final String response) {
-        return response.startsWith("$") && response.endsWith(")");
+        double retValue = -1;
+        final String REGEX = "\\<.*\\>";
+        
+        // Search for a version.
+        Pattern pattern = Pattern.compile(REGEX);
+        Matcher matcher = pattern.matcher(response);
+        if (matcher.find()) {
+            return true;
+        }
+        return false;
     }
     
     /**
@@ -275,7 +261,7 @@ public class GrblUtils {
         String retValue = null;
         String REGEX;
         
-        if (version.REAL_TIME) {
+        if (version == Capabilities.STATUS_C) {
             REGEX = "(?<=\\<)[a-zA-z]*(?=[,])";
         } else {
             return null;
@@ -294,7 +280,7 @@ public class GrblUtils {
     
     static Pattern mmPattern = Pattern.compile(".*:\\d+\\.\\d\\d\\d,.*");
     static protected Units getUnitsFromStatusString(final String status, final Capabilities version) {
-        if (version.REAL_TIME) {
+        if (version == Capabilities.STATUS_C) {
             if (mmPattern.matcher(status).find()) {
                 return Units.MM;
             } else {
@@ -305,73 +291,32 @@ public class GrblUtils {
         return Units.UNKNOWN;
     }
 
-    static Pattern machinePattern = Pattern.compile("(?<=MPos:)(-?\\d*\\..\\d*),(-?\\d*\\..\\d*),(-?\\d*\\..\\d*)");
-    static protected Position getMachinePositionFromStatusString(final String status, final Capabilities version, Units reportingUnits) {
-        if (version.REAL_TIME) {
-            return GrblUtils.getPositionFromStatusString(status, machinePattern, reportingUnits);
+    static Pattern machinePattern = Pattern.compile("(?<=MPos:)(-?\\d*\\..\\d*),(-?\\d*\\..\\d*),(-?\\d*\\..\\d*)(?=,WPos:)");
+    static protected Point3d getMachinePositionFromStatusString(final String status, final Capabilities version) {
+        if (version == Capabilities.STATUS_C) {
+            return GrblUtils.getPositionFromStatusString(status, machinePattern);
         } else {
             return null;
         }
     }
     
     static Pattern workPattern = Pattern.compile("(?<=WPos:)(\\-?\\d*\\..\\d*),(\\-?\\d*\\..\\d*),(\\-?\\d*\\..\\d*)");
-    static protected Position getWorkPositionFromStatusString(final String status, final Capabilities version, Units reportingUnits) {
-        if (version.REAL_TIME) {
-            return GrblUtils.getPositionFromStatusString(status, workPattern, reportingUnits);
+    static protected Point3d getWorkPositionFromStatusString(final String status, final Capabilities version) {
+        if (version == Capabilities.STATUS_C) {
+            return GrblUtils.getPositionFromStatusString(status, workPattern);
         } else {
             return null;
         }
     }
     
-    static private Position getPositionFromStatusString(final String status, final Pattern pattern, Units reportingUnits) {
+    static private Point3d getPositionFromStatusString(final String status, final Pattern pattern) {
         Matcher matcher = pattern.matcher(status);
         if (matcher.find()) {
-            return new Position( Double.parseDouble(matcher.group(1)),
+            return new Point3d( Double.parseDouble(matcher.group(1)),
                                 Double.parseDouble(matcher.group(2)),
-                                Double.parseDouble(matcher.group(3)),
-                                reportingUnits);
+                                Double.parseDouble(matcher.group(3)));
         }
         
-        return null;
-    }
-
-    /**
-     * Map version enum to GRBL real time command byte.
-     */
-    static public Byte getOverrideForEnum(final Overrides command, final Capabilities version) {
-        if (version != null && version.OVERRIDES) {
-            switch (command) {
-                //CMD_DEBUG_REPORT, // 0x85 // Only when DEBUG enabled, sends debug report in '{}' braces.
-                case CMD_FEED_OVR_RESET:
-                    return (byte)0x90; // Restores feed override value to 100%.
-                case CMD_FEED_OVR_COARSE_PLUS:
-                    return (byte)0x91;
-                case CMD_FEED_OVR_COARSE_MINUS:
-                    return (byte)0x92;
-                case CMD_FEED_OVR_FINE_PLUS :
-                    return (byte)0x93;
-                case CMD_FEED_OVR_FINE_MINUS :
-                    return (byte)0x94;
-                case CMD_RAPID_OVR_RESET:
-                    return (byte)0x95;
-                case CMD_RAPID_OVR_MEDIUM:
-                    return (byte)0x96;
-                case CMD_RAPID_OVR_LOW:
-                    return (byte)0x97;
-                case CMD_SPINDLE_OVR_RESET:
-                    return (byte)0x99; // Restores spindle override value to 100%.
-                case CMD_SPINDLE_OVR_COARSE_PLUS:
-                    return (byte)0x9A;
-                case CMD_SPINDLE_OVR_COARSE_MINUS:
-                    return (byte)0x9B;
-                case CMD_SPINDLE_OVR_FINE_PLUS:
-                    return (byte)0x9C;
-                case CMD_SPINDLE_OVR_FINE_MINUS:
-                    return (byte)0x9D;
-                case CMD_SPINDLE_OVR_STOP:
-                    return (byte)0x9E;
-            }
-        }
         return null;
     }
 }

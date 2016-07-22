@@ -24,21 +24,15 @@ package com.willwinder.universalgcodesender;
 import com.willwinder.universalgcodesender.gcode.GcodeCommandCreator;
 import com.willwinder.universalgcodesender.i18n.Localization;
 import com.willwinder.universalgcodesender.listeners.GrblSettingsListener;
-import com.willwinder.universalgcodesender.model.Overrides;
-import com.willwinder.universalgcodesender.model.Position;
-import com.willwinder.universalgcodesender.model.UGSEvent.ControlState;
 import com.willwinder.universalgcodesender.model.Utils.Units;
 import com.willwinder.universalgcodesender.types.GcodeCommand;
-import com.willwinder.universalgcodesender.types.GrblFeedbackMessage;
-import com.willwinder.universalgcodesender.types.GrblSettingMessage;
-
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.Timer;
+import javax.vecmath.Point3d;
 
 /**
  *
@@ -52,21 +46,17 @@ public class GrblController extends AbstractController {
     private GrblSettingsListener settings;
 
     // Grbl status members.
-    private GrblUtils.Capabilities capabilities = null;
+    private GrblUtils.Capabilities positionMode = null;
     private Boolean realTimeCapable = false;
-    private String grblState = "";
-    private Position machineLocation;
-    private Position workLocation;
+    private String grblState;
+    private Point3d machineLocation;
+    private Point3d workLocation;
     private double maxZLocationMM;
-
+    private Units units;
+    
     // Polling state
     private int outstandingPolls = 0;
     private Timer positionPollTimer = null;  
-
-    // Canceling state
-    private Boolean isCanceling = false;     // Set for the position polling thread.
-    private int attemptsRemaining;
-    private Position lastLocation;
     
     public GrblController(AbstractCommunicator comm) {
         super(comm);
@@ -82,7 +72,7 @@ public class GrblController extends AbstractController {
     }
 
     @Override
-    public long getJobLengthEstimate(File gcodeFile) {
+    public long getJobLengthEstimate(Collection<String> jobLines) {
         // Pending update to support cross-platform and multiple GRBL versions.
         return 0;
         //GrblSimulator simulator = new GrblSimulator(settings.getSettings());
@@ -96,21 +86,8 @@ public class GrblController extends AbstractController {
     
     @Override
     protected void rawResponseHandler(String response) {
-        if (GcodeCommand.isOkErrorResponse(response)) {
+        if (GcodeCommand.isOkErrorResponse(response)) {            
             try {
-                // If there is an error, pause the stream.
-                if (response.startsWith("error:")) {
-                    System.out.println("response = " + response);
-                    this.pauseStreaming();
-                    this.dispatchStateChange(ControlState.COMM_SENDING_PAUSED);
-                    GcodeCommand command = getActiveCommand();
-                    String error =
-                            String.format(Localization.getString("controller.exception.sendError"),
-                                    command,
-                                    response);
-                    this.errorMessageForConsole(error);
-                }
-
                 this.commandComplete(response);
             } catch (Exception e) {
                 this.errorMessageForConsole(Localization.getString("controller.error.response")
@@ -121,31 +98,16 @@ public class GrblController extends AbstractController {
         }
         
         else if (GrblUtils.isGrblVersionString(response)) {
-            this.isReady = true;
-            resetBuffers();
-            positionPollTimer = createPositionPollTimer();
-
-            // In case a reset occurred while streaming.
-            if (this.isStreamingFile()) {
-                checkStreamFinished();
-            }
-
             // Version string goes to console
             this.messageForConsole(response + "\n");
             
             this.grblVersion = GrblUtils.getVersionDouble(response);
             this.grblVersionLetter = GrblUtils.getVersionLetter(response);
+            this.isReady = true;
             
             this.realTimeCapable = GrblUtils.isRealTimeCapable(this.grblVersion);
             
-            this.capabilities = GrblUtils.getGrblStatusCapabilities(this.grblVersion, this.grblVersionLetter);
-            try {
-                this.sendCommandImmediately(createCommand(GrblUtils.GRBL_VIEW_SETTINGS_COMMAND));
-                this.sendCommandImmediately(createCommand(GrblUtils.GRBL_VIEW_PARSER_STATE_COMMAND));
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-
+            this.positionMode = GrblUtils.getGrblStatusCapabilities(this.grblVersion, this.grblVersionLetter);
             this.beginPollingPosition();
             
             Logger.getLogger(GrblController.class.getName()).log(Level.CONFIG, 
@@ -163,23 +125,7 @@ public class GrblController extends AbstractController {
             
             this.handlePositionString(response);
         }
-
-        else if (GrblUtils.isGrblFeedbackMessage(response)) {
-            System.out.println("response = " + response);
-            GrblFeedbackMessage grblFeedbackMessage = new GrblFeedbackMessage(response);
-            this.messageForConsole(grblFeedbackMessage.toString() + "\n");
-            setDistanceModeCode(grblFeedbackMessage.getDistanceMode());
-            setUnitsCode(grblFeedbackMessage.getUnits());
-        }
-
-        else if (GrblUtils.isGrblSettingMessage(response)) {
-            GrblSettingMessage message = new GrblSettingMessage(response);
-            this.messageForConsole(response + "\n");
-            if (message.isReportingUnits()) {
-                setReportingUnits(message.getReportingUnits());
-            }
-        }
-
+        
         else {
             // Display any unhandled messages
             this.messageForConsole(response + "\n");
@@ -216,14 +162,6 @@ public class GrblController extends AbstractController {
     }
 
     @Override
-    protected void isReadyToStreamCommandsEvent() throws Exception {
-        isReadyToSendCommandsEvent();
-        if (grblState != null && grblState.equals("Alarm")) {
-            throw new Exception(Localization.getString("grbl.exception.Alarm"));
-        }
-    }
-
-    @Override
     protected void isReadyToSendCommandsEvent() throws Exception {
         if (this.isReady == false) {
             throw new Exception(Localization.getString("controller.exception.booting"));
@@ -231,34 +169,27 @@ public class GrblController extends AbstractController {
     }
     
     @Override
-    protected void cancelSendBeforeEvent() throws Exception {
-        boolean paused = isPaused();
-        // The cancel button is left enabled at all times now, but can only be
-        // used for some versions of GRBL.
-        if (paused && !this.realTimeCapable) {
-            throw new Exception("Cannot cancel while paused with this version of GRBL. Reconnect to reset GRBL.");
-        }
-
+    protected void cancelSendBeforeEvent() {
         // Check if we can get fancy with a soft reset.
-        if (!paused && this.realTimeCapable == true) {
+        if (this.realTimeCapable == true) {
+            // This doesn't seem to work.
+            /*
             try {
-                this.pauseStreaming();
-                this.dispatchStateChange(ControlState.COMM_SENDING_PAUSED);
-            } catch (Exception e) {
+                if (!this.paused) {
+                    this.pauseStreaming();
+                }
+                this.issueSoftReset();
+                this.awaitingResponseQueue.clear();
+            } catch (IOException e) {
                 // Oh well, was worth a shot.
                 System.out.println("Exception while trying to issue a soft reset: " + e.getMessage());
             }
+            */
         }
     }
     
     @Override
-    protected void cancelSendAfterEvent() throws Exception {
-        if (this.realTimeCapable && this.getStatusUpdatesEnabled()) {
-            // Trigger the position listener to watch for the machine to stop.
-            this.attemptsRemaining = 50;
-            this.isCanceling = true;
-            this.lastLocation = null;
-        }
+    protected void cancelSendAfterEvent() {
     }
     
     /**
@@ -267,14 +198,11 @@ public class GrblController extends AbstractController {
     @Override
     public void performHomingCycle() throws Exception {
         if (this.isCommOpen()) {
-            String gcode = GrblUtils.getHomingCommand(this.grblVersion, this.grblVersionLetter);
-            if (!"".equals(gcode)) {
-                GcodeCommand command = createCommand(gcode);
+            String command = GrblUtils.getHomingCommand(this.grblVersion, this.grblVersionLetter);
+            if (!"".equals(command)) {
                 this.sendCommandImmediately(command);
                 return;
             }
-        } else {
-            throw new IllegalStateException("Communication is not ready yet");
         }
         // Throw exception
         super.performHomingCycle();
@@ -283,9 +211,8 @@ public class GrblController extends AbstractController {
     @Override
     public void resetCoordinatesToZero() throws Exception {
         if (this.isCommOpen()) {
-            String gcode = GrblUtils.getResetCoordsToZeroCommand(this.grblVersion, this.grblVersionLetter);
-            if (!"".equals(gcode)) {
-                GcodeCommand command = createCommand(gcode);
+            String command = GrblUtils.getResetCoordsToZeroCommand(this.grblVersion, this.grblVersionLetter);
+            if (!"".equals(command)) {
                 this.sendCommandImmediately(command);
                 return;
             }
@@ -297,9 +224,8 @@ public class GrblController extends AbstractController {
     @Override
     public void resetCoordinateToZero(final char coord) throws Exception {
         if (this.isCommOpen()) {
-            String gcode = GrblUtils.getResetCoordToZeroCommand(coord, this.grblVersion, this.grblVersionLetter);
-            if (!"".equals(gcode)) {
-                GcodeCommand command = createCommand(gcode);
+            String command = GrblUtils.getResetCoordToZeroCommand(coord, this.grblVersion, this.grblVersionLetter);
+            if (!"".equals(command)) {
                 this.sendCommandImmediately(command);
                 return;
             }
@@ -314,20 +240,21 @@ public class GrblController extends AbstractController {
             double max = 0;
             if (this.maxZLocationMM != -1) {
                 max = this.maxZLocationMM;
+                if (this.units == Units.INCH) {
+                    System.out.println("Converting max Z to INCH");
+                    max = this.maxZLocationMM / 26.4;
+                }
             }
             ArrayList<String> commands = GrblUtils.getReturnToHomeCommands(this.grblVersion, this.grblVersionLetter, max);
             if (!commands.isEmpty()) {
                 Iterator<String> iter = commands.iterator();
                 // Perform the homing commands
                 while(iter.hasNext()){
-                    String gcode = iter.next();
-                    GcodeCommand command = createCommand(gcode);
+                    String command = iter.next();
                     this.sendCommandImmediately(command);
                 }
                 return;
             }
-
-            restoreParserModalState();
         }
         // Throw exception
         super.returnToHome();
@@ -336,9 +263,8 @@ public class GrblController extends AbstractController {
     @Override
     public void killAlarmLock() throws Exception {
         if (this.isCommOpen()) {
-            String gcode = GrblUtils.getKillAlarmLockCommand(this.grblVersion, this.grblVersionLetter);
-            if (!"".equals(gcode)) {
-                GcodeCommand command = createCommand(gcode);
+            String command = GrblUtils.getKillAlarmLockCommand(this.grblVersion, this.grblVersionLetter);
+            if (!"".equals(command)) {
                 this.sendCommandImmediately(command);
                 return;
             }
@@ -350,9 +276,8 @@ public class GrblController extends AbstractController {
     @Override
     public void toggleCheckMode() throws Exception {
         if (this.isCommOpen()) {
-            String gcode = GrblUtils.getToggleCheckModeCommand(this.grblVersion, this.grblVersionLetter);
-            if (!"".equals(gcode)) {
-                GcodeCommand command = createCommand(gcode);
+            String command = GrblUtils.getToggleCheckModeCommand(this.grblVersion, this.grblVersionLetter);
+            if (!"".equals(command)) {
                 this.sendCommandImmediately(command);
                 return;
             }
@@ -364,9 +289,8 @@ public class GrblController extends AbstractController {
     @Override
     public void viewParserState() throws Exception {
         if (this.isCommOpen()) {
-            String gcode = GrblUtils.getViewParserStateCommand(this.grblVersion, this.grblVersionLetter);
-            if (!"".equals(gcode)) {
-                GcodeCommand command = createCommand(gcode);
+            String command = GrblUtils.getViewParserStateCommand(this.grblVersion, this.grblVersionLetter);
+            if (!"".equals(command)) {
                 this.sendCommandImmediately(command);
                 return;
             }
@@ -451,7 +375,7 @@ public class GrblController extends AbstractController {
      */
     private void beginPollingPosition() {
         // Start sending '?' commands if supported and enabled.
-        if (this.capabilities != null && this.getStatusUpdatesEnabled()) {
+        if (this.positionMode != null && this.getStatusUpdatesEnabled()) {
             if (this.positionPollTimer.isRunning() == false) {
                 this.outstandingPolls = 0;
                 this.positionPollTimer.start();
@@ -470,34 +394,14 @@ public class GrblController extends AbstractController {
     
     // No longer a listener event
     private void handlePositionString(final String string) {
-        if (this.capabilities != null) {
-            grblState = GrblUtils.getStateFromStatusString(string, capabilities);
-
-            machineLocation = GrblUtils.getMachinePositionFromStatusString(string, capabilities, getReportingUnits());
-            workLocation = GrblUtils.getWorkPositionFromStatusString(string, capabilities, getReportingUnits());
-
-
-            if (isCanceling) {
-                if (attemptsRemaining > 0 && lastLocation != null) {
-                    attemptsRemaining--;
-                    if (grblState.equals("Hold") && lastLocation.equals(machineLocation)) {
-                        try {
-                            this.issueSoftReset();
-                        } catch(Exception e) {
-                            this.errorMessageForConsole(e.getMessage());
-                        }
-                        isCanceling = false;
-                    }
-                    if (isCanceling && attemptsRemaining == 0) {
-                        this.errorMessageForConsole(Localization.getString("grbl.exception.cancelReset"));
-                    }
-                }
-                lastLocation = new Position(machineLocation);
-            }
+        if (this.positionMode != null) {
+            grblState = GrblUtils.getStateFromStatusString(string, positionMode);
+            machineLocation = GrblUtils.getMachinePositionFromStatusString(string, positionMode);
+            workLocation = GrblUtils.getWorkPositionFromStatusString(string, positionMode);
             
             // Save max Z location
             if (machineLocation != null) {
-                Units u = GrblUtils.getUnitsFromStatusString(string, capabilities);
+                Units u = GrblUtils.getUnitsFromStatusString(string, positionMode);
                 double zLocationMM = machineLocation.z;
                 if (u == Units.INCH)
                     zLocationMM *= 26.4;
@@ -530,11 +434,7 @@ public class GrblController extends AbstractController {
     }
 
     @Override
-    public void sendOverrideCommand(Overrides command) throws Exception {
-        Byte realTimeCommand = GrblUtils.getOverrideForEnum(command, capabilities);
-        if (realTimeCommand != null) {
-            this.comm.sendByteImmediately(realTimeCommand);
-        }
+    public void currentUnits(Units units) {
+        this.units = units;
     }
-
 }

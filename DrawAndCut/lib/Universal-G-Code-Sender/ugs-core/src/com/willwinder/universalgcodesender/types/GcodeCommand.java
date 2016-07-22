@@ -7,7 +7,7 @@
  */
 
 /*
-    Copywrite 2012-2016 Will Winder
+    Copywrite 2012 Will Winder
 
     This file is part of Universal Gcode Sender (UGS).
 
@@ -34,9 +34,7 @@ import com.willwinder.universalgcodesender.gcode.GcodePreprocessorUtils;
  * @author wwinder
  */
 public class GcodeCommand {
-    private static final String ERROR = "error";
     private String command;
-    private String originalCommand;
     private String response;
     private String responseType;
     private Boolean sent = false;
@@ -48,7 +46,6 @@ public class GcodeCommand {
     private boolean isComment = false;
     private boolean hasComment = false;
     private String comment;
-    private boolean isTemporaryParserModalChange = false;
 
     public GcodeCommand(String command) {
         this(command, -1);
@@ -58,20 +55,14 @@ public class GcodeCommand {
         this.command = command;
         this.commandNum = num;
         this.comment = GcodePreprocessorUtils.parseComment(command);
-        if (this.hasComment()) {
+        this.hasComment = (this.comment.length() > 0);
+        if (this.hasComment) {
             this.command = GcodePreprocessorUtils.removeComment(command);
             if (this.command.trim().length() == 0)
                 this.isComment = true;
         }
     }
-
-    public GcodeCommand(String command, String originalCommand, String comment, int num) {
-        this.command = command;
-        this.originalCommand = originalCommand;
-        this.comment = comment;
-        this.commandNum = num;
-    }
-
+    
     /** Setters. */
     public void setCommand(String command) {
         this.command = command;
@@ -104,11 +95,7 @@ public class GcodeCommand {
     public String getCommandString() {
         return this.command;
     }
-
-    public String getOriginalCommandString() {
-        return this.originalCommand;
-    }
-
+    
     public int getCommandNumber() {
         return this.commandNum;
     }
@@ -138,25 +125,11 @@ public class GcodeCommand {
     }
 
     public boolean hasComment() {
-        return this.comment != null && this.comment.length() != 0;
+        return this.hasComment;
     }
 
     public String getComment() {
         return this.comment;
-    }
-
-    /**
-     * True for things like Jogging, false for commands from a gcode file
-     */
-    public boolean isTemporaryParserModalChange() {
-        return isTemporaryParserModalChange;
-    }
-
-    /**
-     * True for things like Jogging, false for commands from a gcode file
-     */
-    public void setTemporaryParserModalChange(boolean isGUICommand) {
-        this.isTemporaryParserModalChange = isGUICommand;
     }
 
     public Boolean parseResponse() {
@@ -170,7 +143,7 @@ public class GcodeCommand {
         if (response.toLowerCase().equals("ok")) {
             this.isOk = true;
             this.isError = false;
-        } else if (response.toLowerCase().startsWith(ERROR)) {
+        } else if (response.toLowerCase().startsWith("error")) {
             this.isOk = false;
             this.isError = true;
         }
@@ -189,7 +162,7 @@ public class GcodeCommand {
             returnString = "ok" + number;
         }
         else if (this.isError) {
-            returnString = ERROR+number+"["+response.substring("error: ".length()) + "]";
+            returnString = "error"+number+"["+response.substring("error: ".length()) + "]";
         }
         
         return returnString;
@@ -202,7 +175,7 @@ public class GcodeCommand {
     public static Boolean isOkErrorResponse(String response) {
         if (response.toLowerCase().equals("ok")) {
             return true;
-        } else if (response.toLowerCase().startsWith(ERROR)) {
+        } else if (response.toLowerCase().startsWith("error")) {
             return true;
         }
         return false;

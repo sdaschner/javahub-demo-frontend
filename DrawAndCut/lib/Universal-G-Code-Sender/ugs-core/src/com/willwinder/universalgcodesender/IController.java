@@ -1,32 +1,13 @@
 /*
-    Copywrite 2015-2016 Will Winder
-
-    This file is part of Universal Gcode Sender (UGS).
-
-    UGS is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    UGS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with UGS.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
 package com.willwinder.universalgcodesender;
 
 import com.willwinder.universalgcodesender.gcode.GcodeCommandCreator;
 import com.willwinder.universalgcodesender.listeners.ControllerListener;
-import com.willwinder.universalgcodesender.model.Overrides;
 import com.willwinder.universalgcodesender.model.Utils.Units;
-import com.willwinder.universalgcodesender.types.GcodeCommand;
-import com.willwinder.universalgcodesender.utils.GcodeStreamReader;
-
-import java.io.File;
-import java.io.Reader;
 import java.util.Collection;
 
 /**
@@ -40,6 +21,11 @@ public interface IController {
     public void addListener(ControllerListener cl);
 
     /*
+    State updates.
+    */
+    public void currentUnits(Units units);
+    
+    /*
     Actions
     */
     public void performHomingCycle() throws Exception;
@@ -50,11 +36,6 @@ public interface IController {
     public void toggleCheckMode() throws Exception;
     public void viewParserState() throws Exception;
     public void issueSoftReset() throws Exception;
-
-    /*
-    Overrides
-    */
-    public void sendOverrideCommand(Overrides command) throws Exception;
 
     /*
     Behavior
@@ -69,7 +50,7 @@ public interface IController {
     public int getStatusUpdateRate();
     
     public GcodeCommandCreator getCommandCreator();
-    public long getJobLengthEstimate(File gcodeFile);
+    public long getJobLengthEstimate(Collection<String> jobLines);
     
     /*
     Serial
@@ -84,10 +65,10 @@ public interface IController {
     public Boolean isReadyToStreamFile() throws Exception;
     public Boolean isStreamingFile();
     public long getSendDuration();
+    public int rowsInQueue();
     public int rowsInSend();
     public int rowsSent();
     public int rowsRemaining();
-    public GcodeCommand getActiveCommand();
     
     /*
     Stream control
@@ -95,23 +76,12 @@ public interface IController {
     public void beginStreaming() throws Exception;
     public void pauseStreaming() throws Exception;
     public void resumeStreaming() throws Exception;
-    public Boolean isPaused();
-    public void cancelSend() throws Exception;
-
-    /**
-     * In case a controller reset is detected.
-     */
-    public void resetBuffers();
+    public void cancelSend();
 
     /*
     Stream content
     */
-    public GcodeCommand createCommand(String gcode) throws Exception;
-    public void sendCommandImmediately(GcodeCommand cmd) throws Exception;
-    public void queueCommand(GcodeCommand cmd) throws Exception;
-    public void queueStream(GcodeStreamReader r);
-    public void queueRawStream(Reader r);
-
-    public void restoreParserModalState();
-    public void updateParserModalState(GcodeCommand command);
+    public void sendCommandImmediately(String str) throws Exception;
+    public void queueCommand(String str) throws Exception;
+    public void queueCommands(Iterable<String> commandStrings) throws Exception;
 }

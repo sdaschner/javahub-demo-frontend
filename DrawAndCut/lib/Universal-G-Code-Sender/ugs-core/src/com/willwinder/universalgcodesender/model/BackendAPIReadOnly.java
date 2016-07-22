@@ -3,7 +3,7 @@
  */
 
 /*
-    Copywrite 2015-2016 Will Winder
+    Copywrite 2015 Will Winder
 
     This file is part of Universal Gcode Sender (UGS).
 
@@ -23,29 +23,27 @@
 package com.willwinder.universalgcodesender.model;
 
 import com.willwinder.universalgcodesender.listeners.ControllerListener;
+import com.willwinder.universalgcodesender.listeners.ControlStateListener;
 import com.willwinder.universalgcodesender.utils.Settings;
 import com.willwinder.universalgcodesender.Utils;
-import com.willwinder.universalgcodesender.model.UGSEvent.ControlState;
+import com.willwinder.universalgcodesender.model.Utils.ControlState;
 import com.willwinder.universalgcodesender.pendantui.SystemStateBean;
 import java.io.File;
-import com.willwinder.universalgcodesender.listeners.UGSEventListener;
 
 /**
  *
  * @author wwinder
  */
 public interface BackendAPIReadOnly {
-    public void addUGSEventListener(UGSEventListener listener);
+    public void addControlStateListener(ControlStateListener listener);
     public void addControllerListener(ControllerListener listener);
     
     // Config options
-    public File getGcodeFile();
-    public File getProcessedGcodeFile();
+    public File getFile();
 
     // Controller status
     public boolean isConnected();
     public boolean isSending();
-    public boolean isIdle();
     public boolean isPaused();
     public boolean canPause();
     public boolean canCancel();

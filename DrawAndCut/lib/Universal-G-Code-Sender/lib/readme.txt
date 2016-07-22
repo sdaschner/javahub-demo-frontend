@@ -1,2 +1,2 @@
-Necessary library files can be obtained using this maven command:
-ugs-core>mvn.bat dependency:copy-dependencies -DoutputDirectory=javaone2016\DrawAndCut\lib\Universal-G-Code-Sender\lib
+Necessary library files are available from Universal-G-Code-Sender 1.0.9 source bundle:
+https://codeload.github.com/winder/Universal-G-Code-Sender/zip/v1.0.9

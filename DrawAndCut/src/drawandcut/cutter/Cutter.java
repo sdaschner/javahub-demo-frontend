@@ -25,8 +25,6 @@ package drawandcut.cutter;
 
 import com.willwinder.universalgcodesender.GrblController;
 import com.willwinder.universalgcodesender.listeners.ControllerListener;
-import com.willwinder.universalgcodesender.model.Position;
-import com.willwinder.universalgcodesender.model.UGSEvent;
 import com.willwinder.universalgcodesender.types.GcodeCommand;
 import static drawandcut.Configuration.PROBING_OFFSET;
 import java.util.Arrays;
@@ -35,6 +33,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javafx.application.Platform;
+import javax.vecmath.Point3d;
 
 /**
  *
@@ -43,8 +42,8 @@ import javafx.application.Platform;
 public class Cutter {
 
     private String state;
-    private final Position machineCoord = new Position();
-    private final Position workCoord = new Position();
+    private final Point3d machineCoord = new Point3d();
+    private final Point3d workCoord = new Point3d();
     private final CutterListener listener = new CutterListener();
     private volatile InitSequenceState initState = InitSequenceState.NOT_CONNECTED;
     private GrblController grblController;
@@ -76,12 +75,6 @@ public class Cutter {
     private class CutterListener implements ControllerListener {
 
         @Override
-        public void controlStateChange(UGSEvent.ControlState state) {
-            System.out.println("ControllerListener.controlStateChange state = "
-                    + state);
-        }
-
-        @Override
         public void fileStreamComplete(String filename, boolean success) {
             System.out.println(
                     "ControllerListener.fileStreamComplete-1 filename = "
@@ -103,6 +96,9 @@ public class Cutter {
                         break;
                     case PROBING3:
                         initState = InitSequenceState.COORDINATE_RESET;
+                        if (COORDINATE_RESET[0].equals(COORDINATE_RESET_TEMPLATE)) {
+                            throw new IllegalStateException("Coordinates were not initialized properly!");
+                        }
                         sendSequence(COORDINATE_RESET);
                         break;
                     case COORDINATE_RESET:
@@ -118,12 +114,6 @@ public class Cutter {
             System.out.println("state = " + state);
             System.out.println("workCoord = " + workCoord);
             System.out.println("machineCoord = " + machineCoord);
-        }
-
-        @Override
-        public void commandSkipped(GcodeCommand command) {
-            System.out.println("ControllerListener.commandSkipped command = "
-                    + command);
         }
 
         @Override
@@ -165,17 +155,16 @@ public class Cutter {
         }
 
         @Override
-        public void messageForConsole(
-                ControllerListener.MessageType type, String msg) {
+        public void messageForConsole(String msg, Boolean verbose) {
             
 //            if (type != ControllerListener.MessageType.VERBOSE 
 //                    || msg.startsWith("GrblFeedbackMessage")) {
                 
-                System.out.print("CutterConnection " + type + " " + msg);
+                System.out.print("CutterConnection verbose = " + verbose + ", " + msg);
 //            }
             // parse GrblFeedbackMessage{message='[PRB:-2.500,-5.000,-84.405:1]', distanceMode='null', units='null'}
-            if (msg.startsWith("GrblFeedbackMessage") && msg.contains("message='[PRB:")) {
-                String pattern = "message='\\[PRB\\:-[0-9]*\\.[0-9]*,-[0-9]*\\.[0-9]*,(-[0-9]*\\.[0-9]*)\\:1\\]'";
+            if (!verbose && msg.startsWith("[PRB:")) {
+                String pattern = "\\[PRB\\:-[0-9]*\\.[0-9]*,-[0-9]*\\.[0-9]*,(-[0-9]*\\.[0-9]*)\\:1\\]";
                 Matcher matcher = Pattern.compile(pattern).matcher(msg);
                 if (matcher.find()) {
 //                    System.out.println("matcher = " + matcher);
@@ -186,11 +175,25 @@ public class Cutter {
 //                    System.out.println("COORDINATE_RESET[0] = " + COORDINATE_RESET[0]);
                 }
             }
+            if (!verbose && msg.contains("**** Connected to ") && initState == InitSequenceState.NOT_CONNECTED) {
+                initState = InitSequenceState.CONNECTED;
+            } else if (!verbose && msg.contains("['$H'|'$X' to unlock]") && initState == InitSequenceState.CONNECTED) {
+                try {
+                    initState = InitSequenceState.HOMING;
+                    grblController.performHomingCycle();
+                } catch (Exception ex) {
+                    Logger.getLogger(Cutter.class.getName())
+                            .log(Level.SEVERE, null, ex);
+                }
+            } else if (!verbose && msg.contains("error")) {
+                throw new IllegalStateException("Error happened");
+            }
         }
 
         @Override
-        public void statusStringListener(String state,
-                Position machineCoord, Position workCoord) {
+        public void statusStringListener(String state, Point3d machineCoord,
+                Point3d workCoord) {
+            System.out.println("ControllerListener.statusStringListener state = " + state + ", machineCoord = " + machineCoord + ", workCoord = " + workCoord);
             Cutter.this.state = state;
             Cutter.this.machineCoord.set(machineCoord);
             Cutter.this.workCoord.set(workCoord);
@@ -202,13 +205,19 @@ public class Cutter {
                     + numRows);
         }
 
+        @Override
+        public void commandQueued(GcodeCommand command) {
+            System.out.println("ControllerListener.commandQueued command = "
+                    + command);
+        }
+
     }
 
     public void sendSequence(String[] sequence) {
         try {
             for (String command : sequence) {
                 // I've tried sendImmediately here but it is not very reliable
-                grblController.queueCommand(grblController.createCommand(command));
+                grblController.queueCommand(command);
             }
             grblController.beginStreaming();
         } catch (Exception ex) {

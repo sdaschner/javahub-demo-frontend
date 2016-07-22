@@ -1,9 +1,5 @@
 /*
- * Minor change to the command creator - create TinyG commands.
- */
-
-/*
-    Copywrite 2013 Will Winder
+    Copywrite 2015 Will Winder
 
     This file is part of Universal Gcode Sender (UGS).
 
@@ -20,20 +16,14 @@
     You should have received a copy of the GNU General Public License
     along with UGS.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.willwinder.universalgcodesender.gcode;
+package com.willwinder.universalgcodesender.listeners;
 
-import com.willwinder.universalgcodesender.types.GcodeCommand;
-import com.willwinder.universalgcodesender.types.TinyGGcodeCommand;
+import com.willwinder.universalgcodesender.model.ControlStateEvent;
 
 /**
  *
  * @author wwinder
  */
-public class TinyGGcodeCommandCreator extends GcodeCommandCreator {
-    @Override
-    public GcodeCommand createCommand(String commandString) {
-        TinyGGcodeCommand command = new TinyGGcodeCommand(commandString);
-        command.setCommandNumber(this.numCommands++);
-        return command;
-    }
+public interface ControlStateListener {
+    public void ControlStateEvent(ControlStateEvent evt);
 }

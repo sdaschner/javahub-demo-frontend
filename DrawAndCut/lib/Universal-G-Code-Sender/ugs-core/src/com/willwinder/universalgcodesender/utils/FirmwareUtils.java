@@ -28,7 +28,6 @@ import com.willwinder.universalgcodesender.AbstractController;
 import com.willwinder.universalgcodesender.GrblController;
 import com.willwinder.universalgcodesender.TinyGController;
 import com.willwinder.universalgcodesender.XLCDCommunicator;
-import com.willwinder.universalgcodesender.LoopBackCommunicator;
 import java.util.ArrayList;
 
 /**
@@ -40,18 +39,14 @@ public class FirmwareUtils {
     final public static String Smoothie = "SmoothieBoard";
     final public static String TinyG    = "TinyG";
     final public static String XLCD     = "XLCD";
-    final public static String LOOPBACK = "Loopback";
-    final public static String LOOPBACK2= "Loopback_Slow";
     
-   
+    
     public static ArrayList<String> getFirmwareList() {
         ArrayList<String> ret = new ArrayList<>();
         ret.add(GRBL);
         //ret.add(Smoothie);
         ret.add(TinyG);
         ret.add(XLCD);
-        ret.add(LOOPBACK);
-        ret.add(LOOPBACK2);
         
         return ret;
     }
@@ -66,12 +61,6 @@ public class FirmwareUtils {
                 return new TinyGController();
             case XLCD:
                 return new GrblController(new XLCDCommunicator());
-            case LOOPBACK:
-                return new GrblController(new LoopBackCommunicator());
-            case LOOPBACK2:
-                return new GrblController(new LoopBackCommunicator(10));
-            default:
-                break;
         }
         
         return null;

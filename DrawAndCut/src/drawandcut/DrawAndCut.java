@@ -23,7 +23,6 @@
  */
 package drawandcut;
 
-import com.google.common.io.Files;
 import static drawandcut.Configuration.DOC;
 import static drawandcut.Configuration.PLUNGE_FEED;
 import drawandcut.cutter.CutterConnection;
@@ -35,11 +34,10 @@ import drawandcut.ui.ControlPane;
 import drawandcut.ui.DrawPane;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
@@ -79,7 +77,7 @@ public class DrawAndCut extends Application {
                 System.out.println(line);
             }
             try {
-                Files.write(output.stream().collect(Collectors.joining("\n")), new File("output.wc"), Charset.defaultCharset());
+                Files.write(new File("output.wc").toPath(), output);
             } catch (IOException ex) {
                 Logger.getLogger(DrawAndCut.class.getName())
                         .log(Level.SEVERE, null, ex);

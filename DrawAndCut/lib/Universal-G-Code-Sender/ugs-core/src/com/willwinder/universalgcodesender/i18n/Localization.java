@@ -25,7 +25,6 @@
 package com.willwinder.universalgcodesender.i18n;
 
 import java.text.DecimalFormatSymbols;
-import java.util.Enumeration;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
@@ -38,63 +37,26 @@ public class Localization {
     static {dfs.setDecimalSeparator('.');}
 
     private static ResourceBundle bundle = null;
-    private static ResourceBundle english = null;
 
-    private static int englishKeyCount = 0;
-
-    /**
-     * Loads a given language.
-     * @param language
-     * @return Returns false if some keys are missing compared to "en_US"
-     */
-    synchronized public static boolean initialize(String language) {
+    public static void initialize(String language) {
         String[] lang = language.split("_");
-        return initialize(lang[0], lang[1]);
+        initialize(lang[0], lang[1]);
     }
     
-    /**
-     * Loads a given language.
-     * @param language
-     * @return Returns false if some keys are missing compared to "en_US"
-     */
-    synchronized public static boolean initialize(String language, String region) {
+    public static void initialize(String language, String region) {
         Locale locale = new Locale(language, region);
         bundle = ResourceBundle.getBundle("resources.MessagesBundle", locale);
-        return getKeyCount(bundle) >= getEnglishKeyCount();
     }
-
+    
     public static String getString(String id) {
         try {
+            if (bundle == null) {
+                Localization.initialize("en", "US");
+            }
             String val = bundle.getString(id);
             return new String(val.getBytes("ISO-8859-1"), "UTF-8");
         } catch (Exception e) {
-            try {
-                if (english == null)
-                    english = ResourceBundle.getBundle("resources.MessagesBundle", new Locale("en", "US"));
-                String val = english.getString(id);
-                return new String(val.getBytes("ISO-8859-1"), "UTF-8");
-            } catch (Exception e2) { 
-                return "<" + id + ">";
-            }
+            return "<" + id + ">";
         }
-    }
-
-    private static int getEnglishKeyCount() {
-        if (englishKeyCount > 0) return englishKeyCount;
-        ResourceBundle b= ResourceBundle.getBundle("resources.MessagesBundle", new Locale("en", "US"));
-        englishKeyCount = getKeyCount(b);
-        return englishKeyCount;
-    }
-
-    private static int getKeyCount(ResourceBundle b) {
-        Enumeration<String> keyEnum = b.getKeys();
-
-        int ret = 0;
-        while (keyEnum.hasMoreElements()) {
-            keyEnum.nextElement();
-            ret++;
-        }
-
-        return ret;
     }
 }

@@ -4,7 +4,7 @@
  */
 
 /*
-    Copywrite 2013-2016 Will Winder
+    Copywrite 2013 Will Winder
 
     This file is part of Universal Gcode Sender (UGS).
 
@@ -50,7 +50,6 @@ public class GcodeParser {
     private double smallArcThreshold = 1.0;
     // Not configurable outside, but maybe it should be.
     private double smallArcSegmentLength = 0.3;
-    private final int maxCommandLength = 50;
     
     // The gcode.
     List<PointSegment> points;
@@ -116,29 +115,22 @@ public class GcodeParser {
     }
     
     /**
-     * Add a command to be processed with no line number association.
+     * Add a command to be processed.
      */
     public PointSegment addCommand(String command) {
-        return addCommand(command, this.commandNumber++);
-    }
-
-    /**
-     * Add a command to be processed with a line number.
-     */
-    public PointSegment addCommand(String command, int line) {
         String stripped = GcodePreprocessorUtils.removeComment(command);
         List<String> args = GcodePreprocessorUtils.splitCommand(stripped);
-        return this.addCommand(args, line);
+        return this.addCommand(args);
     }
     
     /**
      * Add a command which has already been broken up into its arguments.
      */
-    public PointSegment addCommand(List<String> args, int line) {
+    public PointSegment addCommand(List<String> args) {
         if (args.isEmpty()) {
             return null;
         }
-        return processCommand(args, line);
+        return processCommand(args);
     }
 
     /**
@@ -190,7 +182,8 @@ public class GcodeParser {
         }
         
         // Remove the last point now that we're about to expand it.
-        int num = this.points.remove(this.points.size() - 1).getLineNumber();
+        this.points.remove(this.points.size() - 1);
+        commandNumber--;        
                 
         // Initialize return value
         List<PointSegment> psl = new ArrayList<>();
@@ -200,7 +193,7 @@ public class GcodeParser {
         // skip first element.
         Iterator<Point3d> psi = expandedPoints.listIterator(1);
         while (psi.hasNext()) {
-            temp = new PointSegment(psi.next(), num);
+            temp = new PointSegment(psi.next(), commandNumber++);
             temp.setIsMetric(lastSegment.isMetric());
 
             // Add new points.
@@ -218,7 +211,7 @@ public class GcodeParser {
         return this.points;
     }
 
-    private PointSegment processCommand(List<String> args, int line) {
+    private PointSegment processCommand(List<String> args) {
         List<String> gCodes;
         PointSegment ps = null;
         
@@ -235,14 +228,14 @@ public class GcodeParser {
         }
         
         for (String i : gCodes) {
-            ps = handleGCode(i, args, line);
+            ps = handleGCode(i, args);
         }
         
         return ps;
     }
 
-    private PointSegment addLinearPointSegment(Point3d nextPoint, boolean fastTraverse, int line) {
-        PointSegment ps = new PointSegment(nextPoint, line);
+    private PointSegment addLinearPointSegment(Point3d nextPoint, boolean fastTraverse) {
+        PointSegment ps = new PointSegment(nextPoint, commandNumber++);
 
         boolean zOnly = false;
 
@@ -263,8 +256,8 @@ public class GcodeParser {
         return ps;
     }
 
-    private PointSegment addArcPointSegment(Point3d nextPoint, boolean clockwise, List<String> args, int line) {
-        PointSegment ps = new PointSegment(nextPoint, line);
+    private PointSegment addArcPointSegment(Point3d nextPoint, boolean clockwise, List<String> args) {
+        PointSegment ps = new PointSegment(nextPoint, commandNumber++);
 
         Point3d center =
                 GcodePreprocessorUtils.updateCenterWithCommand(
@@ -291,7 +284,7 @@ public class GcodeParser {
         return ps;
     }
 
-    private PointSegment handleGCode(String code, List<String> args, int line) {
+    private PointSegment handleGCode(String code, List<String> args) {
         PointSegment ps = null;
         Point3d nextPoint = 
             GcodePreprocessorUtils.updatePointWithCommand(
@@ -302,18 +295,18 @@ public class GcodeParser {
 
         switch (code) {
             case "0":
-                ps = addLinearPointSegment(nextPoint, true, line);
+                ps = addLinearPointSegment(nextPoint, true);
                 break;
             case "1":
-                ps = addLinearPointSegment(nextPoint, false, line);
+                ps = addLinearPointSegment(nextPoint, false);
                 break;
 
             // Arc command.
             case "2":
-                ps = addArcPointSegment(nextPoint, true, args, line);
+                ps = addArcPointSegment(nextPoint, true, args);
                 break;
             case "3":
-                ps = addArcPointSegment(nextPoint, false, args, line);
+                ps = addArcPointSegment(nextPoint, false, args);
                 break;
 
             case "20":
@@ -338,14 +331,12 @@ public class GcodeParser {
             case "91.1":
                 this.inAbsoluteIJKMode = false;
                 break;
-            default:
-                break;
         }
         this.lastGcodeCommand = code;
         return ps;
     }
 
-    public List<String> preprocessCommands(Collection<String> commands) throws Exception {
+    public List<String> preprocessCommands(Collection<String> commands) {
         int count = commands.size();
         int interval = count / 1000;
         List<String> result = new ArrayList<>(count);
@@ -365,12 +356,14 @@ public class GcodeParser {
         return result;
     }
 
-    public List<String> preprocessCommand(String command) throws Exception {
+    public List<String> preprocessCommand(String command) {
         List<String> result = new ArrayList<>();
+        boolean hasComment = false;
 
         // Remove comments from command.
         String newCommand = GcodePreprocessorUtils.removeComment(command);
         String rawCommand = newCommand;
+        hasComment = (newCommand.length() != command.length());
 
         if (removeAllWhitespace) {
             newCommand = GcodePreprocessorUtils.removeAllWhitespace(newCommand);
@@ -397,16 +390,15 @@ public class GcodeParser {
                 } else {
                     result.add(newCommand);
                 }
+            } else if (hasComment) {
+                // Maintain line level comment.
+                result.add(command.replace(rawCommand, newCommand));
             } else {
                 result.add(newCommand);
             }
-        }
-
-        // Check command length
-        for (String c : result) {
-            if (c.length() > maxCommandLength) {
-                throw new Exception ("Command '"+c+"' is too long: " + c.length() + " > " + maxCommandLength);
-            }
+        } else if (hasComment) {
+            // Reinsert comment-only lines.
+            result.add(command);
         }
 
         return result;

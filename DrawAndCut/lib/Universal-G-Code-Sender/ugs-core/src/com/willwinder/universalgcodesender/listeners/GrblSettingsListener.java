@@ -1,11 +1,9 @@
 package com.willwinder.universalgcodesender.listeners;
 
 import com.willwinder.universalgcodesender.AbstractController;
-import com.willwinder.universalgcodesender.GrblUtils;
-import com.willwinder.universalgcodesender.model.Position;
-import com.willwinder.universalgcodesender.model.UGSEvent;
 import com.willwinder.universalgcodesender.types.GcodeCommand;
 
+import javax.vecmath.Point3d;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,11 +19,11 @@ public class GrblSettingsListener implements ControllerListener {
     public boolean inParsingMode = false;
     private boolean firstSettingReceived = false;
     public boolean sending = false;
-    private final Object refreshLock = new Object();
+    private Object refreshLock = new Object();
 
     public final List<String> settings = new ArrayList<>();
 
-    private final AbstractController controller;
+    private AbstractController controller;
 
     public GrblSettingsListener(AbstractController controller) {
         this.controller = controller;
@@ -34,9 +32,9 @@ public class GrblSettingsListener implements ControllerListener {
 
     public List<String> getSettings() {
 
-        if (settings.isEmpty()) {
+        if (settings.size() == 0) {
             synchronized (refreshLock) {
-                if (settings.isEmpty())
+                if (settings.size() == 0)
                     refreshSettings();
             }
         }
@@ -58,8 +56,7 @@ public class GrblSettingsListener implements ControllerListener {
 
             } while(!ready);
 
-            GcodeCommand command = controller.createCommand(GrblUtils.GRBL_VIEW_SETTINGS_COMMAND);
-            controller.sendCommandImmediately(command);
+            controller.sendCommandImmediately("$$");
             while (this.sending) {
                 Thread.sleep(10);
             }
@@ -74,16 +71,12 @@ public class GrblSettingsListener implements ControllerListener {
     }
 
     @Override
-    public void controlStateChange(UGSEvent.ControlState state) {
-    }
-
-    @Override
     public void fileStreamComplete(String filename, boolean success) {
 
     }
 
     @Override
-    public void commandSkipped(GcodeCommand command) {
+    public void commandQueued(GcodeCommand command) {
 
     }
 
@@ -109,8 +102,8 @@ public class GrblSettingsListener implements ControllerListener {
     }
 
     @Override
-    public void messageForConsole(MessageType type, String msg) {
-        if (type == MessageType.VERBOSE)
+    public void messageForConsole(String msg, Boolean verbose) {
+        if (verbose)
             return;
         if (this.inParsingMode) {
             if (firstSettingReceived && msg.startsWith("ok")) {
@@ -123,7 +116,7 @@ public class GrblSettingsListener implements ControllerListener {
     }
 
     @Override
-    public void statusStringListener(String state, Position machineCoord, Position workCoord) {
+    public void statusStringListener(String state, Point3d machineCoord, Point3d workCoord) {
     }
 
     @Override

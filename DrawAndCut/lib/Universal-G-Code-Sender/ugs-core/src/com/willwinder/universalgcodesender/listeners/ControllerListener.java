@@ -2,7 +2,7 @@
  * Controler Listener event interface
  */
 /*
-    Copywrite 2013-2016 Will Winder
+    Copywrite 2013 Will Winder
 
     This file is part of Universal Gcode Sender (UGS).
 
@@ -21,31 +21,20 @@
  */
 package com.willwinder.universalgcodesender.listeners;
 
-import com.willwinder.universalgcodesender.i18n.Localization;
-import com.willwinder.universalgcodesender.model.Position;
-import com.willwinder.universalgcodesender.model.UGSEvent.ControlState;
 import com.willwinder.universalgcodesender.types.GcodeCommand;
+import javax.vecmath.Point3d;
 
 /**
  *
  * @author wwinder
  */
 public interface ControllerListener {
-    /**
-     * The controller has modified the state by itself, such as pausing a job on
-     * an error.
-     */
-    void controlStateChange(ControlState state);
-
-    /**
-     * The file streaming has completed.
-     */
     void fileStreamComplete(String filename, boolean success);
     
     /**
-     * A command in the stream has been skipped.
+     * A command has been added to the output queue.
      */
-    void commandSkipped(GcodeCommand command);
+    void commandQueued(GcodeCommand command);
     
     /**
      * A command has successfully been sent to the controller.
@@ -62,31 +51,15 @@ public interface ControllerListener {
      */
     void commandComment(String comment);
     
-    enum MessageType {
-        VERBOSE("verbose"),
-        INFO("info"),
-        ERROR("error");
-
-        private final String key;
-
-        private MessageType(String key) {
-            this.key = key;
-        }
-
-        public String getLocalizedString() {
-            return Localization.getString(key);
-        }
-    }
-
     /**
      * A console message from the controller.
      */
-    void messageForConsole(MessageType type, String msg);
+    void messageForConsole(String msg, Boolean verbose);
     
     /**
      * Controller status information.
      */
-    void statusStringListener(String state, Position machineCoord, Position workCoord);
+    void statusStringListener(String state, Point3d machineCoord, Point3d workCoord);
     
     /**
      * Data gathered while preprocessing commands for queue.
