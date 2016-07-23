@@ -43,17 +43,15 @@ public class Configuration {
     
     public static final double LINE_WIDTH_MM = 4 * TOOL_DIAMETER; // mm
     
-    public static final int RPM = 9000; // rpm
-    public static final double FEED = 44 * IN; // mmpm
-//    public static final double TARGET_FEED = 65 * IN; // mmpm
+    public static final int RPM = Integer.parseInt(System.getProperty("rpm", "9000")); // rpm
+    public static final double FEED = Double.parseDouble(System.getProperty("feed", Double.toString(44 * IN))); // mmpm
     public static final double PLUNGE_FEED = 14 * IN; // mmpm
-//    public static final double DOC = 0.019 * IN; // mm
+//    public static final double DOC = 0.019 * IN; // mm <-- recommended DOC
     public static final int NUMBER_OF_PASSES = Integer.parseInt(System.getProperty("numberOfPasses", "7"));
     public static final double DOC = MATERIAL_SIZE_Z / NUMBER_OF_PASSES; // mm
-//    public static final double DOC = 0.125 / 7 * IN; // mm
     public static final double Z_ACCURACY = 0.01; // mm
     
-    public static final double PROBING_OFFSET = 0.81; // mm (delta between probing Z and coordinate 0)
+    public static final double PROBING_OFFSET = Double.parseDouble(System.getProperty("probingOffset", "0.81")); // mm (delta between probing Z and coordinate 0)
     public static final String PORT_NAME = System.getProperty("portName", "COM4");
     public static final double FLATNESS = 0.01; // mm
     

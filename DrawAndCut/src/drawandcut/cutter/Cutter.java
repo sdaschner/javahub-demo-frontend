@@ -162,7 +162,7 @@ public class Cutter {
                 
                 System.out.print("CutterConnection verbose = " + verbose + ", " + msg);
 //            }
-            // parse GrblFeedbackMessage{message='[PRB:-2.500,-5.000,-84.405:1]', distanceMode='null', units='null'}
+            // parse [PRB:-2.500,-5.000,-84.405:1]
             if (!verbose && msg.startsWith("[PRB:")) {
                 String pattern = "\\[PRB\\:-[0-9]*\\.[0-9]*,-[0-9]*\\.[0-9]*,(-[0-9]*\\.[0-9]*)\\:1\\]";
                 Matcher matcher = Pattern.compile(pattern).matcher(msg);
