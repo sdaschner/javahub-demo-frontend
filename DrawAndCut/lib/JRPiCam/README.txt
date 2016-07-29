@@ -1,0 +1,1 @@
+Originally cloned from https://github.com/Hopding/JRPiCam then modified as necessary

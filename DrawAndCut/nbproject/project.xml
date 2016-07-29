@@ -6,7 +6,8 @@
             <name>DrawAndCut</name>
             <source-roots>
                 <root id="src.dir"/>
-                <root id="src.src.dir"/>
+                <root id="src.src.dir" name="Sources of  Universal-G-Code-Sender"/>
+                <root id="src.src2.dir" name="Sources of JRPiCam"/>
             </source-roots>
             <test-roots>
                 <root id="test.src.dir"/>

@@ -23,6 +23,7 @@
  */
 package drawandcut;
 
+import static drawandcut.Configuration.DISABLE_CUTTER;
 import static drawandcut.Configuration.DOC;
 import static drawandcut.Configuration.PLUNGE_FEED;
 import drawandcut.cutter.CutterConnection;
@@ -41,6 +42,8 @@ import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import static drawandcut.Configuration.FEED;
 import static drawandcut.Configuration.RPM;
+import drawandcut.ui.ScannerPane;
+import javafx.scene.paint.Color;
 
 /**
  *
@@ -84,17 +87,24 @@ public class DrawAndCut extends Application {
         borderPane.setLeft(controlPane);
         
         primaryStage.setTitle("JavaOne2016 - Draw and Cut demo");
-        primaryStage.setScene(new Scene(borderPane));
+        drawScene = new Scene(borderPane);
+        Scene scannerScene = new Scene(new ScannerPane(), Color.RED);
+        System.out.println("scannerScene = " + scannerScene);
+        primaryStage.setScene(scannerScene);
+//        primaryStage.setScene(Configuration.DISABLE_CAMERA ? drawScene : scannerScene);
         primaryStage.show();
         primaryStage.setMaximized(true);
         primaryStage.setOnCloseRequest(e -> System.exit(0));
         
-        cutterConnection = new CutterConnection();        
-        cutterConnection.connectToCutter();
+        cutterConnection = new CutterConnection();
+        if (!DISABLE_CUTTER) {
+            cutterConnection.connectToCutter();
+        }
 
 //        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(0, 50), new ClosePath());
 //        Outliner outliner = new Outliner(path);
 //        Path outline = outliner.generateOutline();
     }
+    public Scene drawScene;
     
 }

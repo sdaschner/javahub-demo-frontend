@@ -28,6 +28,10 @@ package drawandcut;
  * @author akouznet
  */
 public class Configuration {
+    
+    public static final boolean DISABLE_CUTTER = Boolean.getBoolean("disableCutter");
+    public static final boolean DISABLE_CAMERA = Boolean.getBoolean("disableCamera");
+    
     public static final double IN = 25.4; // mm
     
     public static final double MATERIAL_SIZE_X = Double.parseDouble(System.getProperty("materialSizeX", "200")); // mm
@@ -57,6 +61,10 @@ public class Configuration {
     
     static {
         System.out.println("Configuration summary:");
+        System.out.println("DISABLE_CUTTER = " + DISABLE_CUTTER);
+        System.out.println("DISABLE_CAMERA = " + DISABLE_CAMERA);
+        System.out.println("System.getProperty(\"disableCamera\") = " + System.getProperty("disableCamera"));
+        System.out.println("");
         System.out.printf("Material size (X x Y x Z): %.1f x %.1f x %.3f mm\n", MATERIAL_SIZE_X, MATERIAL_SIZE_Y, MATERIAL_SIZE_Z);
         System.out.printf("Number of passes: %d. Depth of one cut: %.3f mm\n", NUMBER_OF_PASSES, DOC);
         System.out.printf("RPM: %d. Feed: %.0f mmpm, plunge feed: %.0f mmpm\n", RPM, FEED, PLUNGE_FEED);
@@ -64,5 +72,7 @@ public class Configuration {
         System.out.printf("Material size (X x Y x Z): %.2f x %.2f x %.3f in\n", MATERIAL_SIZE_X / IN, MATERIAL_SIZE_Y / IN, MATERIAL_SIZE_Z / IN);
         System.out.printf("Number of passes: %d. Depth of one cut: %.4f in\n", NUMBER_OF_PASSES, DOC / IN);
         System.out.printf("RPM: %d. Feed: %.1f ipm, plunge feed: %.1f ipm\n", RPM, FEED / IN, PLUNGE_FEED / IN);
+        
+        System.out.println("");
     }
 }
