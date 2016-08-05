@@ -50,6 +50,7 @@ public class Cutter {
 
     public void bindToController(GrblController grblController) {
         this.grblController = grblController;
+        this.grblController.setSingleStepMode(true);
         this.grblController.addListener(listener);
     }
     
