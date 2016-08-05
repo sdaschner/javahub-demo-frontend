@@ -70,7 +70,7 @@ public class ScannerPane extends BorderPane {
         Label title = new Label("Scan QR code");
         title.setTextFill(Color.WHITE);
         title.setFont(Font.font(25));
-        BorderPane.setMargin(title, new Insets(20, 0, 0, 0));
+        BorderPane.setMargin(title, new Insets(20, 0, 0, 0)); // TODO: Remove this (fixes bad screen feature)
         BorderPane.setAlignment(title, Pos.CENTER);
         
         setTop(title);
@@ -84,20 +84,29 @@ public class ScannerPane extends BorderPane {
 //        System.out.println("getScene() = " + getScene());
         //pauseTransition.rateProperty().bind(Bindings.when(scene.windowProperty().isNotNull()).then(1).otherwise(0));
         
-        setOnMouseClicked(e -> takeImage());
+//        setOnMouseClicked(e -> takeImage());
     }
 
     @Override
     protected void layoutChildren() {
         super.layoutChildren();
-        System.out.println("getLayoutBounds() = " + getLayoutBounds());
         Bounds boundsInParent = imageView.getBoundsInParent();
-        System.out.println("imageView.boundsInParent = " + boundsInParent);
-        codeScanner.setPreviewPosition(
-                (int) Math.round(boundsInParent.getMinX()), 
-                (int) Math.round(boundsInParent.getMinY()), 
-                (int) Math.round(boundsInParent.getWidth()), 
-                (int) Math.round(boundsInParent.getHeight()));
+//        codeScanner.setPreviewPosition(
+//                (int) Math.round(boundsInParent.getMinX()), 
+//                (int) Math.round(boundsInParent.getMinY()), 
+//                (int) Math.round(boundsInParent.getWidth()), 
+//                (int) Math.round(boundsInParent.getHeight()));
+        System.out.println("ScannerPane.layoutChildren() " + boundsInParent);
+    }
+    
+    private int counter = 0;
+    
+    public void start() {
+        System.out.println("ScannerPane.start()");
+        codeScanner.startTakingStillImages(imageView.getBoundsInParent().getWidth(), imageView.getBoundsInParent().getHeight(), image -> {
+            imageView.setImage(image);
+            System.out.println((counter++) + ". image = " + image);
+        }, System.err::println);
     }
     
     private void takeImage() {

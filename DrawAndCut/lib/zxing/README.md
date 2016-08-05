@@ -1,0 +1,1 @@
+Download javase-3.2.1.jar from http://repo1.maven.org/maven2/com/google/zxing/javase/3.2.1/

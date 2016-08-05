@@ -88,7 +88,8 @@ public class DrawAndCut extends Application {
         
         primaryStage.setTitle("JavaOne2016 - Draw and Cut demo");
         drawScene = new Scene(borderPane);
-        Scene scannerScene = new Scene(new ScannerPane(), Color.RED);
+        ScannerPane scannerPane = new ScannerPane();
+        Scene scannerScene = new Scene(scannerPane, Color.RED);
         System.out.println("scannerScene = " + scannerScene);
         primaryStage.setScene(scannerScene);
 //        primaryStage.setScene(Configuration.DISABLE_CAMERA ? drawScene : scannerScene);
@@ -100,6 +101,8 @@ public class DrawAndCut extends Application {
         if (!DISABLE_CUTTER) {
             cutterConnection.connectToCutter();
         }
+        
+        scannerPane.start();
 
 //        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(0, 50), new ClosePath());
 //        Outliner outliner = new Outliner(path);
