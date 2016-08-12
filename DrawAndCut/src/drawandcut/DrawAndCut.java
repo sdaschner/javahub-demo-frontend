@@ -91,8 +91,8 @@ public class DrawAndCut extends Application {
         ScannerPane scannerPane = new ScannerPane();
         Scene scannerScene = new Scene(scannerPane, Color.RED);
         System.out.println("scannerScene = " + scannerScene);
-        primaryStage.setScene(scannerScene);
-//        primaryStage.setScene(Configuration.DISABLE_CAMERA ? drawScene : scannerScene);
+//        primaryStage.setScene(scannerScene);
+        primaryStage.setScene(Configuration.DISABLE_CAMERA ? drawScene : scannerScene);
         primaryStage.show();
         primaryStage.setMaximized(true);
         primaryStage.setOnCloseRequest(e -> System.exit(0));
@@ -102,7 +102,9 @@ public class DrawAndCut extends Application {
             cutterConnection.connectToCutter();
         }
         
-        scannerPane.start();
+        if (!Configuration.DISABLE_CAMERA) {
+            scannerPane.start();
+        }
 
 //        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(0, 50), new ClosePath());
 //        Outliner outliner = new Outliner(path);
