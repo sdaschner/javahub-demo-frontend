@@ -4,7 +4,6 @@ import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +18,18 @@ import com.hopding.jrpicam.enums.Exposure;
 import com.hopding.jrpicam.enums.ImageEffect;
 import com.hopding.jrpicam.enums.MeteringMode;
 import com.hopding.jrpicam.exceptions.FailedToRunRaspistillException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
+import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * RPiCamera is used to access the Raspberry Pi Camera and take still photos.
@@ -51,11 +62,11 @@ import com.hopding.jrpicam.exceptions.FailedToRunRaspistillException;
  */
 public class RPiCamera {
 	
-	String						prevCommand;
-	String						saveDir;
-	HashMap<String, String[]>	options	= new HashMap<String, String[]>();
-	ProcessBuilder				pb;
-	private volatile Process						p;
+        String prevCommand;
+        String saveDir;
+        HashMap<String, String[]> options = new HashMap<String, String[]>();
+        ProcessBuilder pb;
+        private volatile Process						p;
 								
 	/**
 	 * Sets RPiCamera's save directory to "/home/pi/Pictures".
@@ -242,7 +253,150 @@ public class RPiCamera {
                 p.getInputStream().close();
 		return bi;
 	}
-	
+
+        public void startTakingStillImages(int width, int height,
+                Consumer<BufferedImage> imageConsumer,
+                Consumer<Throwable> errorConsumer) {
+            
+            final String FILENAME = "frame.jpg";
+            
+            List<String> command = new ArrayList<>();
+            command.add("raspistill");
+            command.add("-o");
+            command.add(FILENAME);
+            command.add("-s");
+            command.add("-v");
+            command.add("-t");
+            command.add("0");
+            command.add("-w");
+            command.add("" + width);
+            command.add("-h");
+            command.add("" + height);
+            for (Map.Entry<String, String[]> entry : options.entrySet()) {
+                if (entry.getValue() != null 
+                        && !"width".equals(entry.getKey())
+                        && !"height".equals(entry.getKey())
+                        && !"timeout".equals(entry.getKey())) {
+                    for (String s : entry.getValue()) {
+                        command.add(s);
+                    }
+                }
+            }
+            prevCommand = command.toString();
+            System.out.println("RPiCamera command = " + command);            
+            pb = new ProcessBuilder(command).redirectErrorStream(true);
+            ProcessBuilder processBuilder = pb;
+            
+            new Thread(() -> {
+                try {
+
+                    p = processBuilder.start();
+                    int pid = getRaspistillPid();
+                    System.out.println("pid = " + pid);
+                    int count = 0;
+                    
+                    ImageIO.setUseCache(false);
+
+                    try (WatchService watchService = FileSystems.getDefault()
+                            .newWatchService(); 
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+                        
+                        WatchKey registrationKey = new File(".").toPath()
+                                .register(watchService, ENTRY_CREATE);
+                        
+                        long start = System.currentTimeMillis();
+
+                        while (p.isAlive()) {
+                            waitForRaspistill(reader);
+                            triggerImage(pid);
+
+                            boolean imageObtained = false;
+
+                            while (!imageObtained && p.isAlive()) {
+
+                                WatchKey key = watchService.take();
+                                for (WatchEvent<?> event : key.pollEvents()) {
+
+                                    WatchEvent.Kind<?> kind = event.kind();
+
+                                    if (kind == OVERFLOW) {
+                                        System.err.println("RPiCamera WatchEvent OVERFLOW");
+                                        continue;
+                                    }
+                                    WatchEvent<Path> ev = (WatchEvent<Path>) event;
+                                    Path filename = ev.context();
+                                    if (!FILENAME.equals(filename.toString())) {
+                                        continue;
+                                    }
+
+                                    File file = new File(FILENAME);
+                                    if (file.exists()) {
+                                        BufferedImage bi = ImageIO.read(file);
+                                        if (imageConsumer != null) {
+                                            imageConsumer.accept(bi);
+                                        }
+                                        count++;
+                                        imageObtained = true;
+                                        break;
+                                    }
+                                }
+                                if (!key.reset()) {
+                                    break;
+                                }
+                            }
+                        }
+                        long end = System.currentTimeMillis();
+                        System.out.println(count + " images taken, "
+                                + "ave " + (end - start) / count + " ms per image");
+                    }
+                } catch (Throwable t) {
+                    Logger.getLogger(RPiCamera.class.getName())
+                            .log(Level.SEVERE, null, t);
+                    if (errorConsumer != null) {
+                        errorConsumer.accept(t);
+                    }
+                }
+            }, "RPiCamera.startTakingStillImages").start();
+        }
+        
+        private void waitForRaspistill(BufferedReader reader) throws IOException {
+            while (true) {
+                String line = reader.readLine();
+                if (line == null) {
+                    throw new IllegalStateException("Failed to initialize raspistill");
+                }
+                System.out.println("raspistill: " + line);
+                if (line.contains("Waiting for SIGUSR1 to initiate capture")) {
+                    break;
+                }
+            }
+        }
+
+        public void triggerImage(int pid) {
+            try {
+                new ProcessBuilder("sudo", "kill", "-USR1", "" + pid).inheritIO()
+                        .start().waitFor();
+            } catch (IOException | InterruptedException ex) {
+                Logger.getLogger(RPiCamera.class.getName())
+                        .log(Level.SEVERE, null, ex);
+            }
+        }
+        
+        private int getRaspistillPid() {
+            try {
+                Process pgrep
+                        = new ProcessBuilder("pgrep", "raspistill").redirectError(
+                                ProcessBuilder.Redirect.INHERIT).start();
+                try (BufferedReader r = new BufferedReader(new InputStreamReader(
+                        pgrep.getInputStream()))) {
+                    String pidString = r.readLine();
+                    return Integer.parseInt(pidString);
+                }
+            } catch (IOException ex) {
+                throw new IllegalStateException("Failed to get pid", ex);
+            }
+        }
+
 	/**
 	 * Takes an image and stores it in a BufferedImage object. The resulting image is 
 	 * NOT saved anywhere in the Pi's memory. The image's encoding will be the same as 

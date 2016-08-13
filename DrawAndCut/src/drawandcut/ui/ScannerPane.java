@@ -96,7 +96,7 @@ public class ScannerPane extends BorderPane {
 //                (int) Math.round(boundsInParent.getMinY()), 
 //                (int) Math.round(boundsInParent.getWidth()), 
 //                (int) Math.round(boundsInParent.getHeight()));
-        System.out.println("ScannerPane.layoutChildren() " + boundsInParent);
+//        System.out.println("ScannerPane.layoutChildren() " + boundsInParent);
     }
     
     private int counter = 0;
