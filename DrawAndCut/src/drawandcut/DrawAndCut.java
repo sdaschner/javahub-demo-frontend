@@ -75,7 +75,7 @@ public class DrawAndCut extends Application {
                 System.out.println(line);
             }
             try {
-                Files.write(new File("output.wc").toPath(), output);
+                Files.write(new File("output.nc").toPath(), output);
             } catch (IOException ex) {
                 Logger.getLogger(DrawAndCut.class.getName())
                         .log(Level.SEVERE, null, ex);
