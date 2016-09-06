@@ -37,23 +37,36 @@ public class ControlPane extends GridPane {
     private final double BUTTON_PREF_SIZE = 100;
     private final double PADDING = 8;
 
+    private final Button load = new Button("Load");
     private final Button print = new Button("Print");
 
     public ControlPane() {
+        load.setOnAction(e -> load());
+        load.setPrefSize(BUTTON_PREF_SIZE, BUTTON_PREF_SIZE);
+        
         print.setOnAction(e -> print());
         print.setPrefSize(BUTTON_PREF_SIZE, BUTTON_PREF_SIZE);
         
         setPadding(new Insets(PADDING));
         setAlignment(Pos.CENTER);
         addRow(0, print);
+        addRow(1, load);
     }
     
     public void print() {
         System.out.println("Print");
     }
 
+    public void load() {
+        System.out.println("Load");
+    }
+
     public Button printButton() {
         return print;
+    }
+
+    public Button loadButton() {
+        return load;
     }
     
 }

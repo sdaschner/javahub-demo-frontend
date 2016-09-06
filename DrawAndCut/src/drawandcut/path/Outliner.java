@@ -29,13 +29,8 @@ import java.awt.Shape;
 import java.awt.geom.Area;
 import java.awt.geom.Path2D;
 import java.awt.geom.PathIterator;
-import javafx.collections.ObservableList;
-import javafx.scene.shape.ClosePath;
-import javafx.scene.shape.CubicCurveTo;
-import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
-import javafx.scene.shape.PathElement;
 
 /**
  *
@@ -49,60 +44,17 @@ public class Outliner {
     }
     
     public Path generateOutline() {
-        Path2D path2D = convertToPath2D();
+        Path2D path2D = PathConversions.convertToPath2D(path);
         BasicStroke basicStroke = new BasicStroke((float) Configuration.LINE_WIDTH_MM, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
         Shape strokedShape = basicStroke.createStrokedShape(path2D);
         Area area = new Area(strokedShape);
         PathIterator pathIterator = area.getPathIterator(null, Configuration.FLATNESS);
-        Path outline = new Path();
-        int pathCount = 0;
-        double[] coords = new double[6];
-        while (!pathIterator.isDone()) {            
-            int segType = pathIterator.currentSegment(coords);
-            switch (segType) {
-                case PathIterator.SEG_CLOSE:
-                    outline.getElements().add(new ClosePath());
-                    break;
-                case PathIterator.SEG_LINETO:
-                    outline.getElements().add(new LineTo(coords[0], coords[1]));
-                    break;
-                case PathIterator.SEG_MOVETO:
-                    outline.getElements().add(new MoveTo(coords[0], coords[1]));
-                    pathCount++;
-                    break;
-                case PathIterator.SEG_CUBICTO:
-                    outline.getElements().add(new CubicCurveTo(coords[0], coords[1],
-                            coords[2], coords[3], coords[4], coords[5]));
-                    break;
-                default:
-                    throw new UnsupportedOperationException("This segment type is not supported: " + segType);                    
-            }
-            pathIterator.next();
-        }
+        Path outline = PathConversions.convertToPath(pathIterator);
+        int pathCount = (int) outline.getElements().stream().filter(elem -> elem instanceof MoveTo).count();
         System.out.println("pathCount = " + pathCount);
         if (pathCount != 2) {
             throw new IllegalArgumentException("The path cannot have intersections or have no interior outline");
         }   
-//        System.out.println("path.getElements() = " + outline.getElements());
         return outline;
-    }
-
-    private Path2D convertToPath2D() throws UnsupportedOperationException {
-        Path2D path2D = new Path2D.Double();
-        ObservableList<PathElement> elements = path.getElements();
-        for (PathElement element : elements) {
-            if (element instanceof MoveTo) {
-                MoveTo mt = (MoveTo) element;
-                path2D.moveTo(mt.getX(), mt.getY());
-            } else if (element instanceof LineTo) {
-                LineTo lt = (LineTo) element;
-                path2D.lineTo(lt.getX(), lt.getY());
-            } else if (element instanceof ClosePath) {
-                path2D.closePath();
-            } else {
-                throw new UnsupportedOperationException("This PathElement is not supported: " + element);
-            }
-        }
-        return path2D;
     }
 }

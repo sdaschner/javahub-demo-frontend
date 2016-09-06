@@ -43,6 +43,7 @@ import javafx.stage.Stage;
 import static drawandcut.Configuration.FEED;
 import static drawandcut.Configuration.RPM;
 import drawandcut.ui.ScannerPane;
+import java.util.Properties;
 import javafx.scene.paint.Color;
 
 /**
@@ -63,6 +64,16 @@ public class DrawAndCut extends Application {
     public void start(Stage primaryStage) throws Exception {
         DrawPane drawPane = new DrawPane();
         ControlPane controlPane = new ControlPane();
+        controlPane.loadButton().setOnAction(t -> {
+            try {
+                Properties props = new Properties();
+                props.load(DrawAndCut.class.getResourceAsStream("shapes.properties"));
+                drawPane.importSVG(props.getProperty("airplane"));
+            } catch (IOException ex) {
+                Logger.getLogger(DrawAndCut.class.getName())
+                        .log(Level.SEVERE, null, ex);
+            }
+        });
         controlPane.printButton().disableProperty().bind(drawPane.drawingProperty().isNull());
         controlPane.printButton().setOnAction(t -> {
             DrawPane.Drawing drawing = drawPane.drawingProperty().get();

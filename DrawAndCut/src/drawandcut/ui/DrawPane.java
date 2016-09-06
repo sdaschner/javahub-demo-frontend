@@ -46,6 +46,13 @@ import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
 import static drawandcut.Configuration.LINE_WIDTH_MM;
 import drawandcut.path.Outliner;
+import drawandcut.path.PathConversions;
+import drawandcut.path.SmallPolygonsCleaner;
+import javafx.scene.shape.FillRule;
+import javafx.scene.shape.PathElement;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.SVGPath;
+import javafx.scene.shape.Shape;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
 
@@ -150,8 +157,39 @@ public class DrawPane extends StackPane {
         drawing.get().stop(x, y);
     }
     
-    private Path outline;
+    public void importSVG(String carSVG) {
+        SVGPath svgPath = new SVGPath();
+        svgPath.setContent(carSVG);
+        svgPath.setFillRule(FillRule.EVEN_ODD);
+//        svgPath.setFill(null);
+        svgPath.setStroke(Color.BLACK);
+        
+        drawing.set(new Drawing(0, 0));
+        Path path = (Path) Shape.union(svgPath, new Rectangle(0, 0));
+        outline = simplify(path);
+//        System.out.println("outline = " + outline);
+        System.out.println("path count = " + path.getElements().stream().filter(
+                elem -> elem instanceof MoveTo).count());
+        System.out.println("outline count = " + outline.getElements().stream().filter(
+                elem -> elem instanceof MoveTo).count());
+        outline.setStrokeWidth(Configuration.TOOL_DIAMETER * pxPerMm); // TODO: Fix this (resize properly/offset toolpath)
+        outline.setStroke(Color.BLACK);
+        outline.setStrokeLineJoin(StrokeLineJoin.ROUND);
+        outline.setStrokeLineCap(StrokeLineCap.ROUND);
+        getChildren().add(outline);
+    }
     
+    private Path outline;
+
+    private Path simplify(Path path) {
+        // step 1: remove cubic curves
+        Path path1 = PathConversions.convertToPath(PathConversions.convertToPath2D(
+                path).getPathIterator(null, Configuration.FLATNESS));
+        // step 2: remove small polygons
+        Path path2 = SmallPolygonsCleaner.clean(path1);
+        return path2;
+    }
+
     public class Drawing {
         private Path p = new Path();
 
