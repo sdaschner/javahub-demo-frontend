@@ -43,7 +43,8 @@ import javafx.stage.Stage;
 import static drawandcut.Configuration.FEED;
 import static drawandcut.Configuration.RPM;
 import drawandcut.ui.ScannerPane;
-import java.util.Properties;
+import drawandcut.ui.ShapesPopup;
+import javafx.geometry.Bounds;
 import javafx.scene.paint.Color;
 
 /**
@@ -52,6 +53,7 @@ import javafx.scene.paint.Color;
  */
 public class DrawAndCut extends Application {
     private CutterConnection cutterConnection;
+    private final Shapes shapes = new Shapes();
 
     /**
      * @param args the command line arguments
@@ -64,15 +66,11 @@ public class DrawAndCut extends Application {
     public void start(Stage primaryStage) throws Exception {
         DrawPane drawPane = new DrawPane();
         ControlPane controlPane = new ControlPane();
+        ShapesPopup shapesPopup = new ShapesPopup(shapes);
+        shapesPopup.setOnAction(key -> drawPane.importSVG(shapes.get().get(key)));
         controlPane.loadButton().setOnAction(t -> {
-            try {
-                Properties props = new Properties();
-                props.load(DrawAndCut.class.getResourceAsStream("shapes.properties"));
-                drawPane.importSVG(props.getProperty("airplane"));
-            } catch (IOException ex) {
-                Logger.getLogger(DrawAndCut.class.getName())
-                        .log(Level.SEVERE, null, ex);
-            }
+            Bounds b = controlPane.loadButton().getBoundsInParent();
+            shapesPopup.show(primaryStage, b.getMaxX(), b.getMinY());
         });
         controlPane.printButton().disableProperty().bind(drawPane.drawingProperty().isNull());
         controlPane.printButton().setOnAction(t -> {
