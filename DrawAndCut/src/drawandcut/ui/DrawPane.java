@@ -24,6 +24,8 @@
 package drawandcut.ui;
 
 import drawandcut.Configuration;
+import static drawandcut.Configuration.MATERIAL_SIZE_X;
+import static drawandcut.Configuration.MATERIAL_SIZE_Y;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -48,13 +50,13 @@ import drawandcut.path.Outliner;
 import drawandcut.path.PathConversions;
 import drawandcut.path.SmallPolygonsCleaner;
 import javafx.scene.shape.FillRule;
-import javafx.scene.shape.PathElement;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.shape.Shape;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
 import static drawandcut.Configuration.MOTIF_WIDTH_MM;
+import javafx.geometry.Bounds;
 
 /**
  *
@@ -157,25 +159,46 @@ public class DrawPane extends StackPane {
         drawing.get().stop(x, y);
     }
     
-    public void importSVG(String carSVG) {
+    public void importSVG(String svg) {
         SVGPath svgPath = new SVGPath();
-        svgPath.setContent(carSVG);
+        svgPath.setContent(svg);
         svgPath.setFillRule(FillRule.EVEN_ODD);
-//        svgPath.setFill(null);
-        svgPath.setStroke(Color.BLACK);
+        
+        Bounds b = svgPath.getBoundsInLocal();
+        if (b.getWidth() != 0 && b.getHeight() != 0) {
+            double scale = Math.min(
+                    MATERIAL_SIZE_X / b.getWidth(), 
+                    MATERIAL_SIZE_Y / b.getHeight());            
+            svgPath.getTransforms().addAll(
+                    new Translate(
+                            -b.getMinX() * scale + (MATERIAL_SIZE_X - b.getWidth() * scale) / 2, 
+                            -b.getMinY() * -scale + (MATERIAL_SIZE_Y - b.getHeight() * -scale) / 2), 
+                    new Scale(scale, -scale));
+        }
+        System.out.println("before svgPath.getBoundsInLocal() = " + svgPath.getBoundsInLocal());
+        System.out.println("after svgPath.getBoundsInParent() = " + svgPath.getBoundsInParent());
         
         drawing.set(new Drawing(0, 0));
         Path path = (Path) Shape.union(svgPath, new Rectangle(0, 0));
         outline = simplify(path);
 //        System.out.println("outline = " + outline);
-        System.out.println("path count = " + path.getElements().stream().filter(
-                elem -> elem instanceof MoveTo).count());
-        System.out.println("outline count = " + outline.getElements().stream().filter(
-                elem -> elem instanceof MoveTo).count());
-        outline.setStrokeWidth(Configuration.TOOL_DIAMETER * pxPerMm); // TODO: Fix this (resize properly/offset toolpath)
+//        System.out.println("path count = " + path.getElements().stream().filter(
+//                elem -> elem instanceof MoveTo).count());
+//        System.out.println("outline count = " + outline.getElements().stream().filter(
+//                elem -> elem instanceof MoveTo).count());
+        outline.setStrokeWidth(Configuration.TOOL_DIAMETER);
         outline.setStroke(Color.BLACK);
         outline.setStrokeLineJoin(StrokeLineJoin.ROUND);
         outline.setStrokeLineCap(StrokeLineCap.ROUND);
+        outline.getTransforms().addAll(
+                new Translate(0, -Configuration.MATERIAL_SIZE_Y), 
+                new Scale(pxPerMm, -pxPerMm, 0, MATERIAL_SIZE_Y));
+        outline.setMouseTransparent(true);
+        outline.setManaged(false);
+        outline.layoutXProperty().bind(canvas.layoutXProperty());
+        outline.layoutYProperty().bind(canvas.layoutYProperty());
+        System.out.println("before outline.getBoundsInLocal() = " + outline.getBoundsInLocal());
+        System.out.println("after outline.getBoundsInParent() = " + outline.getBoundsInParent());
         getChildren().add(outline);
     }
     
