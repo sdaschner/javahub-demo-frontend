@@ -45,7 +45,7 @@ public class Configuration {
             
     public static final double TOOL_DIAMETER = 1/8. * IN; // mm
     
-    public static final double LINE_WIDTH_MM = 4 * TOOL_DIAMETER; // mm
+    public static final double MOTIF_WIDTH_MM = 3 * TOOL_DIAMETER; // mm
     
     public static final int RPM = Integer.parseInt(System.getProperty("rpm", "9000")); // rpm
     public static final double FEED = Double.parseDouble(System.getProperty("feed", Double.toString(44 * IN))); // mmpm

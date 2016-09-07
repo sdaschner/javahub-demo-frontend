@@ -45,7 +45,10 @@ public class Outliner {
     
     public Path generateOutline() {
         Path2D path2D = PathConversions.convertToPath2D(path);
-        BasicStroke basicStroke = new BasicStroke((float) Configuration.LINE_WIDTH_MM, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        BasicStroke basicStroke = new BasicStroke(
+                (float) (Configuration.MOTIF_WIDTH_MM + Configuration.TOOL_DIAMETER), 
+                BasicStroke.CAP_ROUND, 
+                BasicStroke.JOIN_ROUND);
         Shape strokedShape = basicStroke.createStrokedShape(path2D);
         Area area = new Area(strokedShape);
         PathIterator pathIterator = area.getPathIterator(null, Configuration.FLATNESS);

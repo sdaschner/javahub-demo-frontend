@@ -44,7 +44,6 @@ import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
-import static drawandcut.Configuration.LINE_WIDTH_MM;
 import drawandcut.path.Outliner;
 import drawandcut.path.PathConversions;
 import drawandcut.path.SmallPolygonsCleaner;
@@ -55,6 +54,7 @@ import javafx.scene.shape.SVGPath;
 import javafx.scene.shape.Shape;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
+import static drawandcut.Configuration.MOTIF_WIDTH_MM;
 
 /**
  *
@@ -99,7 +99,7 @@ public class DrawPane extends StackPane {
         
         canvas.widthProperty().addListener(e -> {
             pxPerMm = canvas.getWidth() / Configuration.MATERIAL_SIZE_X;
-            canvas.getGraphicsContext2D().setLineWidth(LINE_WIDTH_MM * pxPerMm);
+            canvas.getGraphicsContext2D().setLineWidth(MOTIF_WIDTH_MM * pxPerMm);
         });
     }
     
