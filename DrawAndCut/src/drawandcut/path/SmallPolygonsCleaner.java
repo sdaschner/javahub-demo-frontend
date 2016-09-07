@@ -39,7 +39,7 @@ import javafx.scene.shape.PathElement;
  */
 public class SmallPolygonsCleaner {
 
-    private final static double MINIMUM_AREA = 3000;
+    private final static double MINIMUM_AREA = 1000;
     private final static int POINTS_CURVE = 20;
 
     private Point2D p0;
@@ -95,9 +95,13 @@ public class SmallPolygonsCleaner {
     }
     
     private void close() {
-        if (list != null && Math.abs(calculateArea()) > MINIMUM_AREA) {
-            validPaths.add(new Path(elements));
-            linearPath.addAll(generateLinearPath().getElements());
+        if (list != null) {
+            if (Math.abs(calculateArea()) > MINIMUM_AREA) {
+                validPaths.add(new Path(elements));
+                linearPath.addAll(generateLinearPath().getElements());
+            } else {
+    //            System.out.println("ignored");
+            }
         }
         list = null;
     }
@@ -123,7 +127,9 @@ public class SmallPolygonsCleaner {
         for (int i = 0; i < list.size(); i++) {
             a += getPoint(i).crossProduct(getPoint(i + 1)).getZ();
         } 
-        return Math.abs(a/2d);
+        double area = Math.abs(a/2d);
+//        System.out.println("area = " + area);
+        return area;
     }   
     
     private Path generateLinearPath() {

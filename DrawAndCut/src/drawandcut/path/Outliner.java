@@ -60,4 +60,25 @@ public class Outliner {
         }   
         return outline;
     }
+    
+    public Path generateFilledOutline() {
+        Path2D path2D = PathConversions.convertToPath2D(path);        
+        System.out.println("path2D.getBounds2D() = " + path2D.getBounds2D());
+        BasicStroke basicStroke = new BasicStroke(
+                (float) (Configuration.TOOL_DIAMETER/* * 0.75*/), 
+                BasicStroke.CAP_ROUND, 
+                BasicStroke.JOIN_ROUND);
+        Shape strokedShape = basicStroke.createStrokedShape(path2D);
+        Area area = new Area(strokedShape);
+        area.add(new Area(path2D));        
+        PathIterator pathIterator = area.getPathIterator(null, Configuration.FLATNESS);
+        Path outline = PathConversions.convertToPath(pathIterator);
+        int pathCount = (int) outline.getElements().stream().filter(elem -> elem instanceof MoveTo).count();
+        System.out.println("pathCount = " + pathCount);
+        System.out.println("outline.getBoundsInLocal() = " + outline.getBoundsInLocal());
+//        if (pathCount != 2) {
+//            throw new IllegalArgumentException("The path cannot have intersections or have no interior outline");
+//        }   
+        return outline;
+    }
 }

@@ -57,6 +57,7 @@ import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
 import static drawandcut.Configuration.MOTIF_WIDTH_MM;
 import javafx.geometry.Bounds;
+import javafx.scene.Group;
 
 /**
  *
@@ -180,14 +181,16 @@ public class DrawPane extends StackPane {
         
         drawing.set(new Drawing(0, 0));
         Path path = (Path) Shape.union(svgPath, new Rectangle(0, 0));
-        outline = simplify(path);
-//        System.out.println("outline = " + outline);
-//        System.out.println("path count = " + path.getElements().stream().filter(
-//                elem -> elem instanceof MoveTo).count());
-//        System.out.println("outline count = " + outline.getElements().stream().filter(
-//                elem -> elem instanceof MoveTo).count());
+        printPathCount(path, "path");
+        Path simplifiedPath = simplify(path);    
+        printPathCount(simplifiedPath, "simplifiedPath");
+        Path outlinedPath = new Outliner(simplifiedPath).generateFilledOutline();
+        printPathCount(outlinedPath, "outlinedPath");
+        outline = simplify(outlinedPath);
+        printPathCount(outline, "outline");
         outline.setStrokeWidth(Configuration.TOOL_DIAMETER);
         outline.setStroke(Color.BLACK);
+        outline.setOpacity(0.5);
         outline.setStrokeLineJoin(StrokeLineJoin.ROUND);
         outline.setStrokeLineCap(StrokeLineCap.ROUND);
         outline.getTransforms().addAll(
@@ -200,14 +203,34 @@ public class DrawPane extends StackPane {
         System.out.println("before outline.getBoundsInLocal() = " + outline.getBoundsInLocal());
         System.out.println("after outline.getBoundsInParent() = " + outline.getBoundsInParent());
         getChildren().add(outline);
+
+        g = new Group(svgPath);
+        svgPath.setFill(Color.RED);
+        svgPath.setOpacity(0.5);
+        g.setMouseTransparent(true);
+        g.setManaged(false);
+        g.layoutXProperty().bind(canvas.layoutXProperty());
+        g.layoutYProperty().bind(canvas.layoutYProperty());
+        g.getTransforms().addAll(
+                new Translate(0, -Configuration.MATERIAL_SIZE_Y), 
+                new Scale(pxPerMm, -pxPerMm, 0, MATERIAL_SIZE_Y));
+        getChildren().add(g);
+        
+    }
+
+    private static void printPathCount(Path path, String name) {
+        System.out.println(name + " count = " + path.getElements().stream().filter(
+                elem -> elem instanceof MoveTo).count());
     }
     
     private Path outline;
+    private Group g;
 
     private Path simplify(Path path) {
         // step 1: remove cubic curves
         Path path1 = PathConversions.convertToPath(PathConversions.convertToPath2D(
                 path).getPathIterator(null, Configuration.FLATNESS));
+        printPathCount(path1, "path1");
         // step 2: remove small polygons
         Path path2 = SmallPolygonsCleaner.clean(path1);
         return path2;
@@ -221,6 +244,10 @@ public class DrawPane extends StackPane {
             if (outline != null) {
                 getChildren().remove(outline);
                 outline = null;
+            }
+            if (g != null) {
+                getChildren().remove(g);
+                g = null;
             }
             canvas.getGraphicsContext2D().clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
             canvas.getGraphicsContext2D().beginPath();
