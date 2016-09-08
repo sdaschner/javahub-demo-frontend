@@ -24,25 +24,18 @@
 package drawandcut.ui;
 
 import drawandcut.scanner.QRCodeScanner;
-import javafx.animation.PauseTransition;
-import javafx.animation.Timeline;
-import javafx.beans.binding.Bindings;
+import java.util.function.Consumer;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.CornerRadii;
-import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
-import javafx.util.Duration;
 
 /**
  *
@@ -51,16 +44,14 @@ import javafx.util.Duration;
 public class ScannerPane extends BorderPane {
     
     private final QRCodeScanner codeScanner = new QRCodeScanner();
-//    private final Scene scene;
     private final ImageView imageView;
-//    private PauseTransition pauseTransition;
-
+    private Consumer<String> onRead;
+    private int counter;
+    
     public ScannerPane() {
         imageView = new ImageView();
         imageView.setFitWidth(500);
         imageView.setFitHeight(400);
-//        imageView.fitWidthProperty().bind(widthProperty());
-//        imageView.fitHeightProperty().bind(heightProperty());
 
         setBackground(new Background(new BackgroundFill(Color.BLACK, CornerRadii.EMPTY,
                 Insets.EMPTY)));
@@ -74,43 +65,21 @@ public class ScannerPane extends BorderPane {
         BorderPane.setAlignment(title, Pos.CENTER);
         
         setTop(title);
-        
-//        pauseTransition = new PauseTransition(Duration.seconds(0.5));
-//        pauseTransition.setCycleCount(Timeline.INDEFINITE);
-//        pauseTransition.setOnFinished(t -> takeImage());
-//        pauseTransition.play();
-        
-//        scene = new Scene(this, 500, 400, Color.RED);
-//        System.out.println("getScene() = " + getScene());
-        //pauseTransition.rateProperty().bind(Bindings.when(scene.windowProperty().isNotNull()).then(1).otherwise(0));
-        
-//        setOnMouseClicked(e -> takeImage());
     }
 
-    @Override
-    protected void layoutChildren() {
-        super.layoutChildren();
-        Bounds boundsInParent = imageView.getBoundsInParent();
-//        codeScanner.setPreviewPosition(
-//                (int) Math.round(boundsInParent.getMinX()), 
-//                (int) Math.round(boundsInParent.getMinY()), 
-//                (int) Math.round(boundsInParent.getWidth()), 
-//                (int) Math.round(boundsInParent.getHeight()));
-//        System.out.println("ScannerPane.layoutChildren() " + boundsInParent);
-    }
-    
-    private int counter = 0;
-    
     public void start() {
+        counter = 0;
         System.out.println("ScannerPane.start()");
-        codeScanner.startTakingStillImages(imageView.getBoundsInParent().getWidth(), imageView.getBoundsInParent().getHeight(), image -> {
+        codeScanner.startTakingStillImages(imageView.getBoundsInParent().getWidth(), imageView.getBoundsInParent().getHeight(), (image, code) -> {
             imageView.setImage(image);
             System.out.println((counter++) + ". image = " + image);
+            if (onRead != null) {
+                onRead.accept(code);
+            }
         }, System.err::println);
     }
     
-    private void takeImage() {
-        System.out.println("ScannerPane.takeImage()");
-        codeScanner.takeImage().ifPresent(image -> imageView.setImage(image));
+    public void setOnRead(Consumer<String> onRead) {
+        this.onRead = onRead;
     }
 }

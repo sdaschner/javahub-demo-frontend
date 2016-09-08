@@ -37,8 +37,9 @@ public class ControlPane extends GridPane {
     private final double BUTTON_PREF_SIZE = 100;
     private final double PADDING = 8;
 
-    private final Button load = new Button("Load");
+    private final Button scan = new Button("Scan");
     private final Button print = new Button("Print");
+    private final Button load = new Button("Load");
 
     public ControlPane() {
         load.setOnAction(e -> load());
@@ -47,12 +48,20 @@ public class ControlPane extends GridPane {
         print.setOnAction(e -> print());
         print.setPrefSize(BUTTON_PREF_SIZE, BUTTON_PREF_SIZE);
         
+        scan.setOnAction(e -> scan());
+        scan.setPrefSize(BUTTON_PREF_SIZE, BUTTON_PREF_SIZE);
+        
         setPadding(new Insets(PADDING));
         setAlignment(Pos.CENTER);
-        addRow(0, print);
+        addRow(0, scan);
         addRow(1, load);
+        addRow(2, print);
     }
     
+    public void scan() {
+        System.out.println("Scan");
+    }
+
     public void print() {
         System.out.println("Print");
     }
@@ -67,6 +76,10 @@ public class ControlPane extends GridPane {
 
     public Button loadButton() {
         return load;
+    }
+    
+    public Button scanButton() {
+        return scan;
     }
     
 }

@@ -37,6 +37,7 @@ import static drawandcut.Configuration.DISABLE_CAMERA;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -133,7 +134,7 @@ public class QRCodeScanner {
     
     private final QRCodeReader reader = new QRCodeReader();
     
-    public void startTakingStillImages(double width, double height, Consumer<Image> imageConsumer, Consumer<Throwable> errorConsumer) {
+    public void startTakingStillImages(double width, double height, BiConsumer<Image, String> resultConsumer, Consumer<Throwable> errorConsumer) {
         if (piCamera != null) {
             piCamera.startTakingStillImages((int) Math.round(width), (int) Math.round(height), bufferedImage -> {
                 try {
@@ -143,7 +144,7 @@ public class QRCodeScanner {
                     System.out.println("QR code decoded: " + decode);
                     piCamera.stop();
                     Platform.runLater(() -> {
-                        imageConsumer.accept(convertImage(bufferedImage));
+                        resultConsumer.accept(convertImage(bufferedImage), decode.getText());
                     });
                 } catch (NotFoundException | ChecksumException exception) {
                     System.out.println(exception);

@@ -54,6 +54,7 @@ import javafx.scene.paint.Color;
 public class DrawAndCut extends Application {
     private CutterConnection cutterConnection;
     private final Shapes shapes = new Shapes();
+    private Scene drawScene;
 
     /**
      * @param args the command line arguments
@@ -99,9 +100,20 @@ public class DrawAndCut extends Application {
         drawScene = new Scene(borderPane);
         ScannerPane scannerPane = new ScannerPane();
         Scene scannerScene = new Scene(scannerPane, Color.RED);
-        System.out.println("scannerScene = " + scannerScene);
-//        primaryStage.setScene(scannerScene);
-        primaryStage.setScene(Configuration.DISABLE_CAMERA ? drawScene : scannerScene);
+        
+        controlPane.scanButton().setOnAction(t -> {
+            primaryStage.setScene(scannerScene);
+            scannerPane.start();
+        });
+        scannerPane.setOnRead(code -> {
+            String svg = shapes.get().get(code);
+            if (svg != null) {
+                drawPane.importSVG(svg);
+            }
+            primaryStage.setScene(drawScene);
+        });
+
+        primaryStage.setScene(drawScene);
         primaryStage.show();
         primaryStage.setMaximized(true);
         primaryStage.setOnCloseRequest(e -> System.exit(0));
@@ -111,14 +123,9 @@ public class DrawAndCut extends Application {
             cutterConnection.connectToCutter();
         }
         
-        if (!Configuration.DISABLE_CAMERA) {
-            scannerPane.start();
-        }
-
 //        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(0, 50), new ClosePath());
 //        Outliner outliner = new Outliner(path);
 //        Path outline = outliner.generateOutline();
     }
-    public Scene drawScene;
     
 }
