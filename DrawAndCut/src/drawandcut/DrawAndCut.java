@@ -70,8 +70,12 @@ public class DrawAndCut extends Application {
         ShapesPopup shapesPopup = new ShapesPopup(shapes);
         shapesPopup.setOnAction(key -> drawPane.importSVG(shapes.get().get(key)));
         controlPane.loadButton().setOnAction(t -> {
+            if (shapesPopup.isShowing()) {
+                shapesPopup.hide();
+            } else {
             Bounds b = controlPane.loadButton().getBoundsInParent();
             shapesPopup.show(primaryStage, b.getMaxX(), b.getMinY());
+            }
         });
         controlPane.printButton().disableProperty().bind(drawPane.drawingProperty().isNull());
         controlPane.printButton().setOnAction(t -> {
