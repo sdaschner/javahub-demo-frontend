@@ -106,6 +106,7 @@ public class DrawAndCut extends Application {
         ScannerPane scannerPane = new ScannerPane();
         Scene scannerScene = new Scene(scannerPane, Color.RED);
         
+        controlPane.scanButton().setDisable(Configuration.DISABLE_CAMERA);
         controlPane.scanButton().setOnAction(t -> {
             primaryStage.setScene(scannerScene);
             scannerPane.start();
