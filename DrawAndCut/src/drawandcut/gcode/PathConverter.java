@@ -23,7 +23,6 @@
  */
 package drawandcut.gcode;
 
-import drawandcut.Configuration;
 import static drawandcut.Configuration.MATERIAL_SIZE_Z;
 import static drawandcut.Configuration.Z_ACCURACY;
 import java.util.List;

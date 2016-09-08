@@ -36,14 +36,14 @@ public class Configuration {
     
     public static final double MATERIAL_SIZE_X = Double.parseDouble(System.getProperty("materialSizeX", "200")); // mm
     public static final double MATERIAL_SIZE_Y = Double.parseDouble(System.getProperty("materialSizeY", "200")); // mm
-    public static final double MATERIAL_SIZE_Z = 1/8. * IN; // mm
+    public static final double MATERIAL_SIZE_Z = 1 / 8. * IN; // mm
     public static final double MATERIAL_SIZE_RATIO = MATERIAL_SIZE_X / MATERIAL_SIZE_Y;
     
     public static final double MATERIAL_BASE_X = 0; // mm
     public static final double MATERIAL_BASE_Y = 0; // mm
     public static final double MATERIAL_BASE_Z = 0; // mm
             
-    public static final double TOOL_DIAMETER = 1/8. * IN; // mm
+    public static final double TOOL_DIAMETER = 1 / 8. * IN; // mm
     
     public static final double MOTIF_WIDTH_MM = 3 * TOOL_DIAMETER; // mm
     
