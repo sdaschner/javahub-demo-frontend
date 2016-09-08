@@ -74,6 +74,7 @@ public class DrawAndCut extends Application {
                 shapesPopup.hide();
             } else {
             Bounds b = controlPane.loadButton().getBoundsInParent();
+                shapesPopup.setAutoHide(true);
             shapesPopup.show(primaryStage, b.getMaxX(), b.getMinY());
             }
         });
