@@ -1,21 +1,39 @@
+#controlPane {
+    -fx-background-color: white;
+}
+
 #controlPane .button, 
 #controlPane .toggle-button {    
     -fx-content-display: top;
     -fx-graphic-text-gap: 8;
+    -fx-background-color: white;
+}
+
+#controlPane .button:armed, 
+#controlPane .toggle-button:armed, #controlPane .toggle-button:selected {
+    -fx-background-color: D5E6ED;
 }
 
 #scan {
     -fx-graphic: url("ui/icons/qr-code-scan.png");
 }
 #draw {
-    -fx-graphic: url("ui/icons/draw-1_1.png");
+    -fx-graphic: url("ui/icons/draw.png");
 }
 #load {
-    -fx-graphic: url("ui/icons/open-file-button_1.png");
+    -fx-graphic: url("ui/icons/open-file-button.png");
 }
 #exit {
-    -fx-graphic: url("ui/icons/exit_1.png");
+    -fx-graphic: url("ui/icons/exit.png");
 }
 #cut {
-    -fx-graphic: url("ui/icons/tool_1.png");
+    -fx-graphic: url("ui/icons/drilling-machine.png");
+    -fx-font-weight: 800;
+    -fx-border-style: dashed;
+    -fx-border-radius: 6;
+    -fx-border-width: 2;
+    -fx-border-color: BECED5;
+}
+#cut:disabled {
+    -fx-border-width: 0;
 }
