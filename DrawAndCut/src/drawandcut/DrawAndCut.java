@@ -39,9 +39,9 @@ import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import drawandcut.ui.ScannerPane;
-import drawandcut.ui.ShapesPopup;
-import javafx.geometry.Bounds;
+import drawandcut.ui.ShapesPane;
 import javafx.geometry.Insets;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.Background;
 import javafx.scene.paint.Color;
 
@@ -55,6 +55,7 @@ public class DrawAndCut extends Application {
     private Scene drawScene;
     private ControlPane controlPane;
     private ScannerPane scannerPane;
+    private ShapesPane shapesPane;
     private DrawPane drawPane;
     private BorderPane borderPane;
 
@@ -88,19 +89,22 @@ public class DrawAndCut extends Application {
         drawPane.setPadding(new Insets(PADDING));
         borderPane.setCenter(drawPane);
         
-        ShapesPopup shapesPopup = new ShapesPopup(shapes);
-        shapesPopup.setOnAction(key -> drawPane.importSVG(shapes.get().get(key)));
-        shapesPopup.setAutoHide(true);
-        shapesPopup.setOnHiding(t -> controlPane.loadButton().setSelected(false));
+        shapesPane = new ShapesPane(shapes);
+        shapesPane.setOnAction(key -> {
+            drawPane.importSVG(shapes.get().get(key));
+            showDrawPane();
+        });
         
         controlPane = new ControlPane();
         borderPane.setLeft(controlPane);
         
-        controlPane.loadButton().setOnAction(t -> {
-            showDrawPane();
-            Bounds b = controlPane.loadButton().localToScreen(controlPane.loadButton().getBoundsInLocal());
-            shapesPopup.show(primaryStage, b.getMaxX(), b.getMinY());                
-        });
+        ToggleGroup tg = new ToggleGroup();
+        tg.getToggles().addAll(
+                controlPane.drawButton(), 
+                controlPane.loadButton(), 
+                controlPane.scanButton());
+        
+        controlPane.loadButton().setOnAction(t -> showLoadPane());
         controlPane.cutButton().disableProperty().bind(
                 drawPane.outlineProperty().isNull()
                         .or(drawPane.holeProperty().isNull())
@@ -170,14 +174,19 @@ public class DrawAndCut extends Application {
         scannerPane.stop();
         borderPane.setCenter(drawPane);
         drawPane.requestFocus();
-        controlPane.scanButton().setSelected(false);
+        controlPane.drawButton().setSelected(true);
     }
     
     private void showScannerPane() {
         borderPane.setCenter(scannerPane);
         scannerPane.start();
         scannerPane.requestFocus();
-        controlPane.drawButton().setSelected(false);
+    }
+
+    private void showLoadPane() {
+        scannerPane.stop();
+        borderPane.setCenter(shapesPane);
+        shapesPane.requestFocus();
     }
     
 }

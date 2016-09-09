@@ -73,7 +73,6 @@ import javafx.scene.text.Font;
  */
 public class DrawPane extends BorderPane {
     
-    private static final Color BACKGROUND_COLOR = Color.DARKGRAY;
 //    private static final Color CUT_COLOR = BACKGROUND_COLOR;
     private static final Color CUT_COLOR = Color.BLACK;
     private final Pane canvasBackground = new Pane();
@@ -91,8 +90,6 @@ public class DrawPane extends BorderPane {
     public DrawPane() {
         setId("drawPane");
         stackPane = new StackPane();
-        setBackground(new Background(new BackgroundFill(BACKGROUND_COLOR, CornerRadii.EMPTY,
-                Insets.EMPTY)));
         canvasBackground.setBackground(new Background(new BackgroundFill(Color.WHITE, CornerRadii.EMPTY,
                 Insets.EMPTY)));
         

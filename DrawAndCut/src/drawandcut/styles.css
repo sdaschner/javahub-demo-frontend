@@ -1,5 +1,14 @@
-#controlPane {
+#controlPane,
+#flowPane {
     -fx-background-color: white;
+}
+
+#drawPane, #shapesPane, #scannerPane {
+    -fx-background-color: A9A9A9;
+}
+
+.svg-path {
+    -fx-fill: #7999AC;
 }
 
 .button, 

@@ -23,52 +23,67 @@
  */
 package drawandcut.ui;
 
+import static drawandcut.Configuration.PADDING;
 import drawandcut.Shapes;
 import java.util.function.Consumer;
+import javafx.geometry.HPos;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.geometry.VPos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContentDisplay;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
-import javafx.scene.layout.CornerRadii;
+import javafx.scene.control.Label;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
-import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.FillRule;
 import javafx.scene.shape.SVGPath;
-import javafx.scene.text.TextAlignment;
-import javafx.stage.Popup;
+import javafx.scene.text.Font;
 
 /**
  *
  * @author akouznet
  */
-public class ShapesPopup extends Popup {
+public class ShapesPane extends BorderPane {
     
     private Consumer<String> onAction;
 
-    public ShapesPopup(Shapes shapes) {        
+    public ShapesPane(Shapes shapes) {        
         FlowPane flowPane = new FlowPane();
-        getContent().add(flowPane);
+        flowPane.setId("flowPane");
+        flowPane.setVgap(PADDING);
+        flowPane.setHgap(PADDING);
+        flowPane.setAlignment(Pos.CENTER);
+        flowPane.setColumnHalignment(HPos.LEFT);
+        flowPane.setRowValignment(VPos.CENTER);
+        flowPane.setMaxWidth(USE_PREF_SIZE);
+        flowPane.setPadding(new Insets(0, 50, 0, 50));
         shapes.get().forEach((key, shape) -> {
             SVGPath svgPath = new SVGPath();
+            svgPath.getStyleClass().add("svg-path");
             svgPath.setContent(shape);
             svgPath.setFillRule(FillRule.EVEN_ODD);
             ScalableNodePane scalableNodePane = new ScalableNodePane(svgPath);
             scalableNodePane.setMinSize(100, 100);
             scalableNodePane.setPrefSize(100, 100);
             Button button = new Button(key, scalableNodePane);
-            button.setGraphicTextGap(5);
-            button.setContentDisplay(ContentDisplay.TOP);
             button.setOnAction(t -> {
                 if (onAction != null) {
                     onAction.accept(key);
                 }
-                hide();
             });
-//            button.setMaxSize(100, 100);
             flowPane.getChildren().add(button);
         });
+        
+        Label title = new Label("Load model");
+        title.setTextFill(Color.WHITE);
+        title.setFont(Font.font(25));
+        BorderPane.setAlignment(title, Pos.CENTER);
+        
+        setId("shapesPane");
+        setPadding(new Insets(PADDING));        
+        setTop(title);
+        setCenter(flowPane);
     }
 
     public void setOnAction(Consumer<String> onAction) {
