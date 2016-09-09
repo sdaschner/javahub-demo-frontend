@@ -74,6 +74,8 @@ import javafx.scene.text.Font;
 public class DrawPane extends BorderPane {
     
     private static final Color BACKGROUND_COLOR = Color.DARKGRAY;
+//    private static final Color CUT_COLOR = BACKGROUND_COLOR;
+    private static final Color CUT_COLOR = Color.BLACK;
     private final Pane canvasBackground = new Pane();
     private final Canvas canvas;
     private ObjectProperty<Drawing> drawing = new SimpleObjectProperty<>();
@@ -108,7 +110,7 @@ public class DrawPane extends BorderPane {
         
         canvas.getGraphicsContext2D().setLineCap(StrokeLineCap.ROUND);
         canvas.getGraphicsContext2D().setLineJoin(StrokeLineJoin.ROUND);
-        canvas.getGraphicsContext2D().setStroke(Color.BLACK);
+        canvas.getGraphicsContext2D().setStroke(CUT_COLOR);
         
         canvas.widthProperty().addListener(e -> {
             pxPerMm.set(canvas.getWidth() / Configuration.MATERIAL_SIZE_X);
@@ -128,7 +130,7 @@ public class DrawPane extends BorderPane {
         
         holeCircle = new Circle();
         holeCircle.radiusProperty().bind(pxPerMm.multiply(Configuration.TOOL_DIAMETER / 2));
-        holeCircle.setFill(Color.BLACK);
+        holeCircle.setFill(CUT_COLOR);
         holeCircle.setManaged(false);
         holeCircle.setMouseTransparent(true);
         holeCircle.layoutXProperty().bind(canvas.layoutXProperty());
@@ -253,7 +255,7 @@ public class DrawPane extends BorderPane {
         Path outlinePath = simplify(outlinedPath);
         printPathCount(outlinePath, "outline");
         outlinePath.setStrokeWidth(Configuration.TOOL_DIAMETER);
-        outlinePath.setStroke(Color.BLACK);
+        outlinePath.setStroke(CUT_COLOR);
         outlinePath.setStrokeLineJoin(StrokeLineJoin.ROUND);
         outlinePath.setStrokeLineCap(StrokeLineCap.ROUND);
         outlinePath.getTransforms().addAll(
@@ -364,7 +366,7 @@ public class DrawPane extends BorderPane {
             Outliner outliner = new Outliner(drawing.get().getPath());
             Path outlinePath = outliner.generateOutline();
             outlinePath.setStrokeWidth(Configuration.TOOL_DIAMETER);
-            outlinePath.setStroke(Color.BLACK);
+            outlinePath.setStroke(CUT_COLOR);
             outlinePath.setStrokeLineJoin(StrokeLineJoin.ROUND);
             outlinePath.setStrokeLineCap(StrokeLineCap.ROUND);
             outlinePath.getTransforms().addAll(
