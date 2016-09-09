@@ -72,19 +72,16 @@ public class DrawAndCut extends Application {
         
         ShapesPopup shapesPopup = new ShapesPopup(shapes);
         shapesPopup.setOnAction(key -> drawPane.importSVG(shapes.get().get(key)));
+        shapesPopup.setAutoHide(true);
+        shapesPopup.setOnHiding(t -> controlPane.loadButton().setSelected(false));
         
         controlPane = new ControlPane();
         borderPane.setLeft(controlPane);
         
         controlPane.loadButton().setOnAction(t -> {
             showDrawPane();
-            if (shapesPopup.isShowing()) {
-                shapesPopup.hide();
-            } else {
-                Bounds b = controlPane.loadButton().localToScreen(controlPane.loadButton().getBoundsInLocal());
-                shapesPopup.setAutoHide(true);
-                shapesPopup.show(primaryStage, b.getMaxX(), b.getMinY());
-            }
+            Bounds b = controlPane.loadButton().localToScreen(controlPane.loadButton().getBoundsInLocal());
+            shapesPopup.show(primaryStage, b.getMaxX(), b.getMinY());                
         });
         controlPane.cutButton().disableProperty().bind(
                 drawPane.outlineProperty().isNull()

@@ -40,7 +40,7 @@ public class ControlPane extends GridPane {
     private final ToggleButton scan = new ToggleButton("Scan");
     private final Button draw = new Button("Draw");
     private final Button cut = new Button("Cut");
-    private final Button load = new Button("Load");
+    private final ToggleButton load = new ToggleButton("Load");
     private final Button exit = new Button("Exit");
 
     public ControlPane() {
@@ -70,7 +70,7 @@ public class ControlPane extends GridPane {
         return cut;
     }
 
-    public Button loadButton() {
+    public ToggleButton loadButton() {
         return load;
     }
     
