@@ -67,6 +67,7 @@ public class DrawAndCut extends Application {
         borderPane = new BorderPane();
         
         drawPane = new DrawPane();
+        drawPane.setFocusTraversable(true);
         borderPane.setCenter(drawPane);
         
         ShapesPopup shapesPopup = new ShapesPopup(shapes);
@@ -146,12 +147,14 @@ public class DrawAndCut extends Application {
     private void showDrawPane() {
         scannerPane.stop();
         borderPane.setCenter(drawPane);
+        drawPane.requestFocus();
     }
     
     private void showScannerPane() {
         borderPane.setCenter(scannerPane);
 //            primaryStage.setScene(scannerScene);
         scannerPane.start();
+        scannerPane.requestFocus();
     }
     
 }
