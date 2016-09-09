@@ -59,6 +59,7 @@ public class ScannerPane extends BorderPane {
         
         if (Configuration.DISABLE_CAMERA) {
             Button scan = new Button("\"Scan\" bird");
+            scan.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
             scan.setOnAction(t -> {
                 if (onRead != null) {
                     onRead.accept("bird");

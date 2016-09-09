@@ -2,21 +2,21 @@
     -fx-background-color: white;
 }
 
-#controlPane .button, 
-#controlPane .toggle-button {    
+.button, 
+.toggle-button {    
     -fx-content-display: top;
     -fx-graphic-text-gap: 8;
     -fx-background-color: white;
 }
 
-#controlPane .button:armed, 
-#controlPane .toggle-button:armed, 
-#controlPane .toggle-button:selected {
+.button:armed, 
+.toggle-button:armed, 
+.toggle-button:selected {
     -fx-background-color: D5E6ED;
 }
 
-#controlPane .button:hover, 
-#controlPane .toggle-button:hover {
+.button:hover, 
+.toggle-button:hover {
     -fx-background-color: F2F7F9;
 }
 

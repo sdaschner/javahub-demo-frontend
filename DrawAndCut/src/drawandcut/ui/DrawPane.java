@@ -89,6 +89,7 @@ public class DrawPane extends BorderPane {
 
 
     public DrawPane() {
+        setId("drawPane");
         stackPane = new StackPane();
         setBackground(new Background(new BackgroundFill(BACKGROUND_COLOR, CornerRadii.EMPTY,
                 Insets.EMPTY)));

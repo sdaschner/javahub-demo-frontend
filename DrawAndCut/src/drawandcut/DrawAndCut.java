@@ -76,6 +76,7 @@ public class DrawAndCut extends Application {
                 SCREEN_PADDING_LEFT));
         
         scannerPane = new ScannerPane();
+        scannerPane.setPadding(new Insets(PADDING));
         
         drawPane = new DrawPane();
         drawPane.setFocusTraversable(true);
@@ -84,6 +85,7 @@ public class DrawAndCut extends Application {
                 controlPane.drawButton().setSelected(false);
             }
         });
+        drawPane.setPadding(new Insets(PADDING));
         borderPane.setCenter(drawPane);
         
         ShapesPopup shapesPopup = new ShapesPopup(shapes);
