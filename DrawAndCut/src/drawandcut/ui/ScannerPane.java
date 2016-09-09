@@ -31,6 +31,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 
@@ -43,6 +44,9 @@ public class ScannerPane extends BorderPane {
     private final QRCodeScanner codeScanner = new QRCodeScanner();
     private Consumer<String> onRead;
     private int counter;
+    private final Pane previewPane = new Pane();
+    private boolean startAfterLayout = false;
+    private Bounds previewBounds = null;
     
     public ScannerPane() {
         
@@ -52,7 +56,7 @@ public class ScannerPane extends BorderPane {
         BorderPane.setAlignment(title, Pos.CENTER);
         
         if (Configuration.DISABLE_CAMERA) {
-            Button scan = new Button("\"Scan\" bird");
+            Button scan = new Button("Camera preview will appear here");
             scan.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
             scan.setOnAction(t -> {
                 if (onRead != null) {
@@ -60,6 +64,8 @@ public class ScannerPane extends BorderPane {
                 }
             });
             setCenter(scan);
+        } else {
+            setCenter(previewPane);
         }
         
         setId("scannerPane");
@@ -69,18 +75,47 @@ public class ScannerPane extends BorderPane {
     public void start() {
         counter = 0;
         System.out.println("ScannerPane.start()");
-        Bounds previewBounds = localToScreen(getBoundsInLocal());
-        codeScanner.setPreviewPosition(
-                (int) Math.round(previewBounds.getMinX()), 
-                (int) Math.round(previewBounds.getMinX()), 
-                (int) Math.round(previewBounds.getWidth()), 
-                (int) Math.round(previewBounds.getHeight()));
-        codeScanner.startTakingStillImages(getBoundsInLocal().getWidth(), getBoundsInLocal().getHeight(), (image, code) -> {
+        if (previewBounds == null) {
+            startAfterLayout = true;
+        } else {
+            doStart();
+        }
+    }
+
+    public ScannerPane(Consumer<String> onRead, int counter) {
+        this.onRead = onRead;
+        this.counter = counter;
+    }
+
+    @Override
+    protected void layoutChildren() {
+        super.layoutChildren(); //To change body of generated methods, choose Tools | Templates.
+        if (startAfterLayout) {
+            doStart();
+        }
+    }
+    
+    private void doStart() {
+        startAfterLayout = false;
+        System.out.println("ScannerPane.doStart()");
+        setPreviewBounds();
+        codeScanner.startTakingStillImages(previewBounds.getWidth(), previewBounds.getHeight(), (image, code) -> {
             System.out.println((counter++) + ". image = " + image);
             if (onRead != null) {
                 onRead.accept(code);
             }
         }, System.err::println);
+    }
+    
+    private void setPreviewBounds() {
+        if (previewBounds == null) {
+            previewBounds = previewPane.localToScreen(previewPane.getBoundsInLocal());
+            codeScanner.setPreviewPosition(
+                    (int) Math.round(previewBounds.getMinX()), 
+                    (int) Math.round(previewBounds.getMinY()), 
+                    (int) Math.round(previewBounds.getWidth()), 
+                    (int) Math.round(previewBounds.getHeight()));
+        }
     }
     
     public void stop() {

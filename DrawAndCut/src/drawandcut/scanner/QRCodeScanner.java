@@ -157,6 +157,9 @@ public class QRCodeScanner {
     }
     
     public void stopTakingStillImages() {
+        if (piCamera != null) {
+            piCamera.stop();
+        }
         if (thread != null && thread.isAlive()) {
             thread.interrupt();
         }
