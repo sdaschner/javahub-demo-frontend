@@ -56,6 +56,7 @@ import javafx.scene.shape.Shape;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
 import static drawandcut.Configuration.MOTIF_WIDTH_MM;
+import drawandcut.path.OutlinerJava2D;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Bounds;
@@ -85,6 +86,7 @@ public class DrawPane extends BorderPane {
     private ObjectProperty<Point2D> hole = new SimpleObjectProperty<>();
     private Group g;
     private final Circle holeCircle;
+    private final Outliner outliner = new OutlinerJava2D();
 
 
     public DrawPane() {
@@ -252,7 +254,7 @@ public class DrawPane extends BorderPane {
         printPathCount(path, "path");
         Path simplifiedPath = simplify(path);    
         printPathCount(simplifiedPath, "simplifiedPath");
-        Path outlinedPath = new Outliner(simplifiedPath).generateFilledOutline();
+        Path outlinedPath = outliner.generateFilledOutline(simplifiedPath);
         printPathCount(outlinedPath, "outlinedPath");
         Path outlinePath = simplify(outlinedPath);
         printPathCount(outlinePath, "outline");
@@ -365,8 +367,7 @@ public class DrawPane extends BorderPane {
         private void generateOutline() {
     //        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(80, 25), new LineTo(100, 50), new LineTo(0, 50), new ClosePath());
     //        Outliner outliner = new Outliner(path);
-            Outliner outliner = new Outliner(drawing.get().getPath());
-            Path outlinePath = outliner.generateOutline();
+            Path outlinePath = outliner.generateOutline(drawing.get().getPath());
             outlinePath.setStrokeWidth(Configuration.TOOL_DIAMETER);
             outlinePath.setStroke(CUT_COLOR);
             outlinePath.setStrokeLineJoin(StrokeLineJoin.ROUND);
