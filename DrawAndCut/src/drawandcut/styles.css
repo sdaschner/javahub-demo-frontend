@@ -10,8 +10,14 @@
 }
 
 #controlPane .button:armed, 
-#controlPane .toggle-button:armed, #controlPane .toggle-button:selected {
+#controlPane .toggle-button:armed, 
+#controlPane .toggle-button:selected {
     -fx-background-color: D5E6ED;
+}
+
+#controlPane .button:hover, 
+#controlPane .toggle-button:hover {
+    -fx-background-color: F2F7F9;
 }
 
 #scan {
