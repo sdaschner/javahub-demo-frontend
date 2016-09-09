@@ -24,6 +24,7 @@
 package drawandcut;
 
 import static drawandcut.Configuration.*;
+import drawandcut.cutter.Cutter;
 import drawandcut.cutter.CutterConnection;
 import drawandcut.gcode.PathConverter;
 import drawandcut.ui.ControlPane;
@@ -124,7 +125,10 @@ public class DrawAndCut extends Application {
                 Logger.getLogger(DrawAndCut.class.getName())
                         .log(Level.SEVERE, null, ex);
             }
-            cutterConnection.getCutter().sendSequence(output.toArray(new String[output.size()]));
+            Cutter cutter = cutterConnection.getCutter();
+            if (cutter != null) {
+                cutter.sendSequence(output.toArray(new String[output.size()]));
+            }
         });
         controlPane.exitButton().setOnAction(t -> System.exit(0));
         

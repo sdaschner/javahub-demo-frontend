@@ -28,6 +28,7 @@ import drawandcut.scanner.QRCodeScanner;
 import java.util.function.Consumer;
 import javafx.geometry.Bounds;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
@@ -44,7 +45,7 @@ public class ScannerPane extends BorderPane {
     private final QRCodeScanner codeScanner = new QRCodeScanner();
     private Consumer<String> onRead;
     private int counter;
-    private final Pane previewPane = new Pane();
+    private Node preview;
     private boolean startAfterLayout = false;
     private Bounds previewBounds = null;
     
@@ -63,10 +64,11 @@ public class ScannerPane extends BorderPane {
                     onRead.accept("bird");
                 }
             });
-            setCenter(scan);
+            preview = scan;
         } else {
-            setCenter(previewPane);
+            preview = new Pane();
         }
+        setCenter(preview);
         
         setId("scannerPane");
         setTop(title);
@@ -109,7 +111,7 @@ public class ScannerPane extends BorderPane {
     
     private void setPreviewBounds() {
         if (previewBounds == null) {
-            previewBounds = previewPane.localToScreen(previewPane.getBoundsInLocal());
+            previewBounds = preview.localToScreen(preview.getBoundsInLocal());
             codeScanner.setPreviewPosition(
                     (int) Math.round(previewBounds.getMinX()), 
                     (int) Math.round(previewBounds.getMinY()), 
