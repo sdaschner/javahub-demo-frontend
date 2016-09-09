@@ -59,6 +59,9 @@ public class Configuration {
     public static final String PORT_NAME = System.getProperty("portName", "COM4");
     public static final double FLATNESS = 0.01; // mm
     
+    public static final int SCREEN_WIDTH = Integer.parseInt(System.getProperty("screenWidth", "800")); // rpm
+    public static final int SCREEN_HEIGHT = Integer.parseInt(System.getProperty("screenHeight", "480")); // rpm
+    
     public static final double BUTTON_PREF_WIDTH = 100;
     public static final double BUTTON_PREF_HEIGHT = 70;
     public static final double PADDING = 8;

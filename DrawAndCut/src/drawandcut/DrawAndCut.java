@@ -23,9 +23,7 @@
  */
 package drawandcut;
 
-import static drawandcut.Configuration.DISABLE_CUTTER;
-import static drawandcut.Configuration.DOC;
-import static drawandcut.Configuration.PLUNGE_FEED;
+import static drawandcut.Configuration.*;
 import drawandcut.cutter.CutterConnection;
 import drawandcut.gcode.PathConverter;
 import drawandcut.ui.ControlPane;
@@ -40,8 +38,6 @@ import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
-import static drawandcut.Configuration.FEED;
-import static drawandcut.Configuration.RPM;
 import drawandcut.ui.ScannerPane;
 import drawandcut.ui.ShapesPopup;
 import javafx.geometry.Bounds;
@@ -113,7 +109,7 @@ public class DrawAndCut extends Application {
         controlPane.exitButton().setOnAction(t -> System.exit(0));
         
         primaryStage.setTitle("JavaOne2016 - Draw and Cut demo");
-        drawScene = new Scene(borderPane);
+        drawScene = new Scene(borderPane, SCREEN_WIDTH, SCREEN_HEIGHT);
         scannerPane = new ScannerPane();
         
 //        controlPane.scanButton().setDisable(Configuration.DISABLE_CAMERA);
@@ -133,7 +129,6 @@ public class DrawAndCut extends Application {
 
         primaryStage.setScene(drawScene);
         primaryStage.show();
-        primaryStage.setMaximized(true);
         primaryStage.setOnCloseRequest(e -> System.exit(0));
         drawScene.getStylesheets().add(
                 DrawAndCut.class.getResource("styles.css").toExternalForm());
