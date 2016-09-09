@@ -135,6 +135,8 @@ public class DrawAndCut extends Application {
         primaryStage.show();
         primaryStage.setMaximized(true);
         primaryStage.setOnCloseRequest(e -> System.exit(0));
+        drawScene.getStylesheets().add(
+                DrawAndCut.class.getResource("styles.css").toExternalForm());
         
         cutterConnection = new CutterConnection();
         if (!DISABLE_CUTTER) {

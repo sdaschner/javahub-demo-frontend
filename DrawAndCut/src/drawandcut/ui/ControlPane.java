@@ -43,12 +43,18 @@ public class ControlPane extends GridPane {
     private final Button exit = new Button("Exit");
 
     public ControlPane() {
+        scan.setId("scan");
         scan.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
+        draw.setId("draw");
         draw.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
+        load.setId("load");
         load.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
+        cut.setId("cut");
         cut.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
+        exit.setId("exit");
         exit.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
         
+        setId("controlPane");
         setPadding(new Insets(PADDING));
         setVgap(PADDING);
         setAlignment(Pos.CENTER);

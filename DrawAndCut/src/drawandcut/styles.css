@@ -1,0 +1,21 @@
+#controlPane .button, 
+#controlPane .toggle-button {    
+    -fx-content-display: top;
+    -fx-graphic-text-gap: 8;
+}
+
+#scan {
+    -fx-graphic: url("ui/icons/qr-code-scan.png");
+}
+#draw {
+    -fx-graphic: url("ui/icons/draw-1_1.png");
+}
+#load {
+    -fx-graphic: url("ui/icons/open-file-button_1.png");
+}
+#exit {
+    -fx-graphic: url("ui/icons/exit_1.png");
+}
+#cut {
+    -fx-graphic: url("ui/icons/tool_1.png");
+}
