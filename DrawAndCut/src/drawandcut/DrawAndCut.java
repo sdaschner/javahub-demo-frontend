@@ -65,6 +65,7 @@ public class DrawAndCut extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         borderPane = new BorderPane();
+        scannerPane = new ScannerPane();
         
         drawPane = new DrawPane();
         drawPane.setFocusTraversable(true);
@@ -113,7 +114,6 @@ public class DrawAndCut extends Application {
         
         primaryStage.setTitle("JavaOne2016 - Draw and Cut demo");
         drawScene = new Scene(borderPane, SCREEN_WIDTH, SCREEN_HEIGHT);
-        scannerPane = new ScannerPane();
         
 //        controlPane.scanButton().setDisable(Configuration.DISABLE_CAMERA);
         controlPane.scanButton().setOnAction(t -> {
