@@ -80,7 +80,7 @@ public class DrawAndCut extends Application {
             if (shapesPopup.isShowing()) {
                 shapesPopup.hide();
             } else {
-                Bounds b = controlPane.loadButton().getBoundsInParent();
+                Bounds b = controlPane.loadButton().localToScreen(controlPane.loadButton().getBoundsInLocal());
                 shapesPopup.setAutoHide(true);
                 shapesPopup.show(primaryStage, b.getMaxX(), b.getMinY());
             }
