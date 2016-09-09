@@ -26,6 +26,7 @@ package drawandcut.gcode;
 import static drawandcut.Configuration.MATERIAL_SIZE_Z;
 import static drawandcut.Configuration.Z_ACCURACY;
 import java.util.List;
+import javafx.geometry.Point2D;
 import javafx.scene.shape.ClosePath;
 import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
@@ -40,24 +41,37 @@ public class PathConverter {
     
     private final GCodeGenerator gcg = new GCodeGenerator();
     private final Path path;
+    private final Point2D hole;
     private final double feed;
     private final double plungeFeed;
     private final double doc;
     private double startX;
     private double startY;
 
-    public PathConverter(Path input, int rpm, double feed, double doc, double plungeFeed) {
+    public PathConverter(Path path, Point2D hole, int rpm, double feed, double doc, double plungeFeed) {
         this.feed = feed;
-        this.path = input;
+        this.path = path;
+        this.hole = hole;
         this.plungeFeed = plungeFeed;
         this.doc = doc;
-        gcg.init(rpm);        
+        gcg.init(rpm);
+        processHole();
         processPath();
         gcg.spindleStop();
         gcg.goHome();
         gcg.programEnd();
     }
 
+    private void processHole() {
+        if (hole != null) {
+            double x = hole.getX();
+            double y = hole.getY();
+            gcg.rapid(x, y, gcg.getSafeZ());
+            gcg.linearZF(gcg.getBottomZ(), plungeFeed);
+            gcg.rapid(x, y, gcg.getSafeZ());
+        }
+    }
+    
     private void processPath() {
         int zSteps = (int) Math.ceil(MATERIAL_SIZE_Z / doc);
         System.out.println("zSteps = " + zSteps);

@@ -59,6 +59,10 @@ public class Configuration {
     public static final String PORT_NAME = System.getProperty("portName", "COM4");
     public static final double FLATNESS = 0.01; // mm
     
+    public static final double BUTTON_PREF_WIDTH = 100;
+    public static final double BUTTON_PREF_HEIGHT = 70;
+    public static final double PADDING = 8;
+    
     static {
         System.out.println("Configuration summary:");
         System.out.println("DISABLE_CUTTER = " + DISABLE_CUTTER);

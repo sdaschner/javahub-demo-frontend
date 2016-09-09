@@ -355,6 +355,8 @@ public class RPiCamera {
                     if (errorConsumer != null) {
                         errorConsumer.accept(t);
                     }
+                } finally {
+                    System.out.println("Camera thread exited");
                 }
             }, "RPiCamera.startTakingStillImages").start();
         }

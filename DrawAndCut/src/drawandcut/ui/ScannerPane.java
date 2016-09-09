@@ -23,13 +23,14 @@
  */
 package drawandcut.ui;
 
+import drawandcut.Configuration;
 import drawandcut.scanner.QRCodeScanner;
 import java.util.function.Consumer;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
@@ -44,19 +45,12 @@ import javafx.scene.text.Font;
 public class ScannerPane extends BorderPane {
     
     private final QRCodeScanner codeScanner = new QRCodeScanner();
-    private final ImageView imageView;
     private Consumer<String> onRead;
     private int counter;
     
     public ScannerPane() {
-        imageView = new ImageView();
-        imageView.setFitWidth(500);
-        imageView.setFitHeight(400);
-
-        setBackground(new Background(new BackgroundFill(Color.BLACK, CornerRadii.EMPTY,
+        setBackground(new Background(new BackgroundFill(Color.DARKGRAY, CornerRadii.EMPTY,
                 Insets.EMPTY)));
-        
-        setCenter(imageView);        
         
         Label title = new Label("Scan QR code");
         title.setTextFill(Color.WHITE);
@@ -64,19 +58,39 @@ public class ScannerPane extends BorderPane {
         BorderPane.setMargin(title, new Insets(20, 0, 0, 0)); // TODO: Remove this (fixes bad screen feature)
         BorderPane.setAlignment(title, Pos.CENTER);
         
+        if (Configuration.DISABLE_CAMERA) {
+            Button scan = new Button("\"Scan\" bird");
+            scan.setOnAction(t -> {
+                if (onRead != null) {
+                    onRead.accept("bird");
+                }
+            });
+            setCenter(scan);
+        }
+        
         setTop(title);
     }
 
     public void start() {
         counter = 0;
         System.out.println("ScannerPane.start()");
-        codeScanner.startTakingStillImages(imageView.getBoundsInParent().getWidth(), imageView.getBoundsInParent().getHeight(), (image, code) -> {
-            imageView.setImage(image);
+        Bounds previewBounds = localToScreen(getBoundsInLocal());
+        codeScanner.setPreviewPosition(
+                (int) Math.round(previewBounds.getMinX()), 
+                (int) Math.round(previewBounds.getMinX()), 
+                (int) Math.round(previewBounds.getWidth()), 
+                (int) Math.round(previewBounds.getHeight()));
+        codeScanner.startTakingStillImages(getBoundsInLocal().getWidth(), getBoundsInLocal().getHeight(), (image, code) -> {
             System.out.println((counter++) + ". image = " + image);
             if (onRead != null) {
                 onRead.accept(code);
             }
         }, System.err::println);
+    }
+    
+    public void stop() {
+        System.out.println("ScannerPane.stop()");
+        codeScanner.stopTakingStillImages();
     }
     
     public void setOnRead(Consumer<String> onRead) {

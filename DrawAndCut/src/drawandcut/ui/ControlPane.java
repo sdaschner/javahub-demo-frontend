@@ -23,6 +23,7 @@
  */
 package drawandcut.ui;
 
+import static drawandcut.Configuration.*;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -33,45 +34,33 @@ import javafx.scene.layout.GridPane;
  * @author akouznet
  */
 public class ControlPane extends GridPane {
-    
-    private final double BUTTON_PREF_SIZE = 100;
-    private final double PADDING = 8;
+
 
     private final Button scan = new Button("Scan");
-    private final Button print = new Button("Print");
+    private final Button draw = new Button("Draw");
+    private final Button cut = new Button("Cut");
     private final Button load = new Button("Load");
+    private final Button exit = new Button("Exit");
 
     public ControlPane() {
-        load.setOnAction(e -> load());
-        load.setPrefSize(BUTTON_PREF_SIZE, BUTTON_PREF_SIZE);
-        
-        print.setOnAction(e -> print());
-        print.setPrefSize(BUTTON_PREF_SIZE, BUTTON_PREF_SIZE);
-        
-        scan.setOnAction(e -> scan());
-        scan.setPrefSize(BUTTON_PREF_SIZE, BUTTON_PREF_SIZE);
+        scan.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
+        draw.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
+        load.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
+        cut.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
+        exit.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
         
         setPadding(new Insets(PADDING));
+        setVgap(PADDING);
         setAlignment(Pos.CENTER);
         addRow(0, scan);
-        addRow(1, load);
-        addRow(2, print);
+        addRow(1, draw);
+        addRow(2, load);
+        addRow(3, cut);
+        addRow(4, exit);
     }
     
-    public void scan() {
-        System.out.println("Scan");
-    }
-
-    public void print() {
-        System.out.println("Print");
-    }
-
-    public void load() {
-        System.out.println("Load");
-    }
-
-    public Button printButton() {
-        return print;
+    public Button cutButton() {
+        return cut;
     }
 
     public Button loadButton() {
@@ -80,6 +69,14 @@ public class ControlPane extends GridPane {
     
     public Button scanButton() {
         return scan;
+    }
+    
+    public Button drawButton() {
+        return draw;
+    }
+    
+    public Button exitButton() {
+        return exit;
     }
     
 }

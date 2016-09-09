@@ -45,7 +45,6 @@ import static drawandcut.Configuration.RPM;
 import drawandcut.ui.ScannerPane;
 import drawandcut.ui.ShapesPopup;
 import javafx.geometry.Bounds;
-import javafx.scene.paint.Color;
 
 /**
  *
@@ -55,6 +54,10 @@ public class DrawAndCut extends Application {
     private CutterConnection cutterConnection;
     private final Shapes shapes = new Shapes();
     private Scene drawScene;
+    private ControlPane controlPane;
+    private ScannerPane scannerPane;
+    private DrawPane drawPane;
+    private BorderPane borderPane;
 
     /**
      * @param args the command line arguments
@@ -65,30 +68,40 @@ public class DrawAndCut extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        DrawPane drawPane = new DrawPane();
-        ControlPane controlPane = new ControlPane();
+        borderPane = new BorderPane();
+        
+        drawPane = new DrawPane();
+        borderPane.setCenter(drawPane);
+        
         ShapesPopup shapesPopup = new ShapesPopup(shapes);
         shapesPopup.setOnAction(key -> drawPane.importSVG(shapes.get().get(key)));
+        
+        controlPane = new ControlPane();
+        borderPane.setLeft(controlPane);
+        
         controlPane.loadButton().setOnAction(t -> {
+            showDrawPane();
             if (shapesPopup.isShowing()) {
                 shapesPopup.hide();
             } else {
-            Bounds b = controlPane.loadButton().getBoundsInParent();
+                Bounds b = controlPane.loadButton().getBoundsInParent();
                 shapesPopup.setAutoHide(true);
-            shapesPopup.show(primaryStage, b.getMaxX(), b.getMinY());
+                shapesPopup.show(primaryStage, b.getMaxX(), b.getMinY());
             }
         });
-        controlPane.printButton().disableProperty().bind(drawPane.drawingProperty().isNull());
-        controlPane.printButton().setOnAction(t -> {
-            DrawPane.Drawing drawing = drawPane.drawingProperty().get();
-            if (drawing == null) {
-                return;
-            }
-            List<String> output = new PathConverter(drawing.getOutline(), RPM, FEED, DOC, PLUNGE_FEED).getOutput();
-            System.out.println("Program:");
-            for(String line : output) {
-                System.out.println(line);
-            }
+        controlPane.cutButton().disableProperty().bind(
+                drawPane.outlineProperty().isNull()
+                        .or(drawPane.holeProperty().isNull())
+                        .or(borderPane.centerProperty().isEqualTo(scannerPane)));
+        controlPane.cutButton().setOnAction(t -> {
+            List<String> output = new PathConverter(
+                    drawPane.outlineProperty().get(), 
+                    drawPane.holeProperty().get(), 
+                    RPM, FEED, DOC, PLUNGE_FEED).getOutput();
+//            System.out.println("Program:");
+//            for(String line : output) {
+//                System.out.println(line);
+//            }
             try {
                 Files.write(new File("output.nc").toPath(), output);
             } catch (IOException ex) {
@@ -97,26 +110,25 @@ public class DrawAndCut extends Application {
             }
             cutterConnection.getCutter().sendSequence(output.toArray(new String[output.size()]));
         });
-        
-        BorderPane borderPane = new BorderPane(drawPane);
-        borderPane.setLeft(controlPane);
+        controlPane.exitButton().setOnAction(t -> System.exit(0));
         
         primaryStage.setTitle("JavaOne2016 - Draw and Cut demo");
         drawScene = new Scene(borderPane);
-        ScannerPane scannerPane = new ScannerPane();
-        Scene scannerScene = new Scene(scannerPane, Color.RED);
+        scannerPane = new ScannerPane();
         
-        controlPane.scanButton().setDisable(Configuration.DISABLE_CAMERA);
-        controlPane.scanButton().setOnAction(t -> {
-            primaryStage.setScene(scannerScene);
-            scannerPane.start();
+//        controlPane.scanButton().setDisable(Configuration.DISABLE_CAMERA);
+        controlPane.scanButton().setOnAction(t -> showScannerPane());
+        controlPane.drawButton().setOnAction(t -> {
+            showDrawPane();
+            drawPane.drawShape();
         });
+        
         scannerPane.setOnRead(code -> {
             String svg = shapes.get().get(code);
             if (svg != null) {
                 drawPane.importSVG(svg);
             }
-            primaryStage.setScene(drawScene);
+            showDrawPane();
         });
 
         primaryStage.setScene(drawScene);
@@ -132,6 +144,17 @@ public class DrawAndCut extends Application {
 //        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(0, 50), new ClosePath());
 //        Outliner outliner = new Outliner(path);
 //        Path outline = outliner.generateOutline();
+    }
+    
+    private void showDrawPane() {
+        scannerPane.stop();
+        borderPane.setCenter(drawPane);
+    }
+    
+    private void showScannerPane() {
+        borderPane.setCenter(scannerPane);
+//            primaryStage.setScene(scannerScene);
+        scannerPane.start();
     }
     
 }
