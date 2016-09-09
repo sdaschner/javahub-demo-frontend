@@ -24,6 +24,7 @@
 package drawandcut.path;
 
 import drawandcut.Configuration;
+import static drawandcut.Configuration.*;
 import java.awt.BasicStroke;
 import java.awt.Shape;
 import java.awt.geom.Area;
@@ -42,7 +43,7 @@ public class OutlinerJava2D implements Outliner {
     public Path generateOutline(Path path) {
         Path2D path2D = PathConversions.convertToPath2D(path);
         BasicStroke basicStroke = new BasicStroke(
-                (float) (Configuration.MOTIF_WIDTH_MM + Configuration.TOOL_DIAMETER), 
+                (float) (MOTIF_WIDTH_MM + TOOL_DIAMETER), 
                 BasicStroke.CAP_ROUND, 
                 BasicStroke.JOIN_ROUND);
         Shape strokedShape = basicStroke.createStrokedShape(path2D);

@@ -56,6 +56,7 @@ import javafx.scene.shape.Shape;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
 import static drawandcut.Configuration.MOTIF_WIDTH_MM;
+import drawandcut.path.OutlinerEsri;
 import drawandcut.path.OutlinerJava2D;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -86,7 +87,8 @@ public class DrawPane extends BorderPane {
     private ObjectProperty<Point2D> hole = new SimpleObjectProperty<>();
     private Group g;
     private final Circle holeCircle;
-    private final Outliner outliner = new OutlinerJava2D();
+    private final Outliner outliner = new OutlinerEsri();
+//    private final Outliner outliner = new OutlinerJava2D();
 
 
     public DrawPane() {
