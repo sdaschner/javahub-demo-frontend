@@ -27,6 +27,7 @@ import static drawandcut.Configuration.*;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.GridPane;
 
 /**
@@ -36,7 +37,7 @@ import javafx.scene.layout.GridPane;
 public class ControlPane extends GridPane {
 
 
-    private final Button scan = new Button("Scan");
+    private final ToggleButton scan = new ToggleButton("Scan");
     private final Button draw = new Button("Draw");
     private final Button cut = new Button("Cut");
     private final Button load = new Button("Load");
@@ -73,7 +74,7 @@ public class ControlPane extends GridPane {
         return load;
     }
     
-    public Button scanButton() {
+    public ToggleButton scanButton() {
         return scan;
     }
     

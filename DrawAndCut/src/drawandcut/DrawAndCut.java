@@ -114,7 +114,13 @@ public class DrawAndCut extends Application {
         scannerPane = new ScannerPane();
         
 //        controlPane.scanButton().setDisable(Configuration.DISABLE_CAMERA);
-        controlPane.scanButton().setOnAction(t -> showScannerPane());
+        controlPane.scanButton().setOnAction(t -> {
+            if (borderPane.getCenter() == scannerPane) {
+                showDrawPane();
+            } else {
+                showScannerPane();
+            }
+        });
         controlPane.drawButton().setOnAction(t -> {
             showDrawPane();
             drawPane.drawShape();
@@ -148,6 +154,7 @@ public class DrawAndCut extends Application {
         scannerPane.stop();
         borderPane.setCenter(drawPane);
         drawPane.requestFocus();
+        controlPane.scanButton().setSelected(false);
     }
     
     private void showScannerPane() {
