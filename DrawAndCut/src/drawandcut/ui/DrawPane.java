@@ -120,7 +120,6 @@ public class DrawPane extends BorderPane {
         title = new Label("Draw");
         title.setTextFill(Color.WHITE);
         title.setFont(Font.font(25));
-        BorderPane.setMargin(title, new Insets(20, 0, 0, 0)); // TODO: Remove this (fixes bad screen feature)
         BorderPane.setAlignment(title, Pos.CENTER);
         
         setCenter(stackPane);

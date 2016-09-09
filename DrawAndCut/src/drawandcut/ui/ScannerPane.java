@@ -55,7 +55,6 @@ public class ScannerPane extends BorderPane {
         Label title = new Label("Scan QR code");
         title.setTextFill(Color.WHITE);
         title.setFont(Font.font(25));
-        BorderPane.setMargin(title, new Insets(20, 0, 0, 0)); // TODO: Remove this (fixes bad screen feature)
         BorderPane.setAlignment(title, Pos.CENTER);
         
         if (Configuration.DISABLE_CAMERA) {

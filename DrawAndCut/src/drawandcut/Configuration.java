@@ -59,12 +59,17 @@ public class Configuration {
     public static final String PORT_NAME = System.getProperty("portName", "COM4");
     public static final double FLATNESS = 0.01; // mm
     
-    public static final int SCREEN_WIDTH = Integer.parseInt(System.getProperty("screenWidth", "800")); // rpm
-    public static final int SCREEN_HEIGHT = Integer.parseInt(System.getProperty("screenHeight", "480")); // rpm
+    public static final int SCREEN_WIDTH = Integer.parseInt(System.getProperty("screenWidth", "800"));
+    public static final int SCREEN_HEIGHT = Integer.parseInt(System.getProperty("screenHeight", "480"));
     
     public static final double BUTTON_PREF_WIDTH = 100;
     public static final double BUTTON_PREF_HEIGHT = 70;
     public static final double PADDING = 8;
+    
+    public static final int SCREEN_PADDING_TOP = Integer.parseInt(System.getProperty("screenPaddingTop", "0"));
+    public static final int SCREEN_PADDING_BOTTOM = Integer.parseInt(System.getProperty("screenPaddingBottom", "0"));
+    public static final int SCREEN_PADDING_LEFT = Integer.parseInt(System.getProperty("screenPaddingLeft", "0"));
+    public static final int SCREEN_PADDING_RIGHT = Integer.parseInt(System.getProperty("screenPaddingRight", "0"));
     
     static {
         System.out.println("Configuration summary:");

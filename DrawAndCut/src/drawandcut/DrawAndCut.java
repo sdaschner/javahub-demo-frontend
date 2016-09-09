@@ -41,6 +41,9 @@ import javafx.stage.Stage;
 import drawandcut.ui.ScannerPane;
 import drawandcut.ui.ShapesPopup;
 import javafx.geometry.Bounds;
+import javafx.geometry.Insets;
+import javafx.scene.layout.Background;
+import javafx.scene.paint.Color;
 
 /**
  *
@@ -65,6 +68,13 @@ public class DrawAndCut extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         borderPane = new BorderPane();
+        borderPane.setBackground(Background.EMPTY);
+        borderPane.setPadding(new Insets(
+                SCREEN_PADDING_TOP, 
+                SCREEN_PADDING_RIGHT, 
+                SCREEN_PADDING_BOTTOM, 
+                SCREEN_PADDING_LEFT));
+        
         scannerPane = new ScannerPane();
         
         drawPane = new DrawPane();
@@ -113,7 +123,7 @@ public class DrawAndCut extends Application {
         controlPane.exitButton().setOnAction(t -> System.exit(0));
         
         primaryStage.setTitle("JavaOne2016 - Draw and Cut demo");
-        drawScene = new Scene(borderPane, SCREEN_WIDTH, SCREEN_HEIGHT);
+        drawScene = new Scene(borderPane, SCREEN_WIDTH, SCREEN_HEIGHT, Color.BLACK);
         
 //        controlPane.scanButton().setDisable(Configuration.DISABLE_CAMERA);
         controlPane.scanButton().setOnAction(t -> {
