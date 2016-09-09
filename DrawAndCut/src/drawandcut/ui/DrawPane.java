@@ -126,7 +126,7 @@ public class DrawPane extends BorderPane {
         drawShape();
         
         holeCircle = new Circle();
-        holeCircle.radiusProperty().bind(pxPerMm.multiply(Configuration.TOOL_DIAMETER / 2));
+        holeCircle.radiusProperty().bind(pxPerMm.multiply(Configuration.HOLE_DIAMETER / 2));
         holeCircle.setFill(CUT_COLOR);
         holeCircle.setManaged(false);
         holeCircle.setMouseTransparent(true);

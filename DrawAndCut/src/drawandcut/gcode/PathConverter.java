@@ -23,8 +23,11 @@
  */
 package drawandcut.gcode;
 
-import static drawandcut.Configuration.MATERIAL_SIZE_Z;
-import static drawandcut.Configuration.Z_ACCURACY;
+import drawandcut.Configuration;
+import static drawandcut.Configuration.*;
+import drawandcut.path.PathConversions;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Path2D;
 import java.util.List;
 import javafx.geometry.Point2D;
 import javafx.scene.shape.ClosePath;
@@ -66,9 +69,19 @@ public class PathConverter {
         if (hole != null) {
             double x = hole.getX();
             double y = hole.getY();
-            gcg.rapid(x, y, gcg.getSafeZ());
-            gcg.linearZF(gcg.getBottomZ(), plungeFeed);
-            gcg.rapid(x, y, gcg.getSafeZ());
+            if (HOLE_DIAMETER <= TOOL_DIAMETER) {
+                gcg.rapid(x, y, gcg.getSafeZ());
+                gcg.linearZF(gcg.getBottomZ(), plungeFeed);
+                gcg.rapid(x, y, gcg.getSafeZ());
+            } else {
+                double dr = (HOLE_DIAMETER - TOOL_DIAMETER) / 2.;
+                Path2D holePath1 = new Path2D.Double(new Ellipse2D.Double(x - dr, y - dr, dr + dr, dr + dr));
+//                System.out.println("holePath1 = " + holePath1);                
+                Path holePath = PathConversions.convertToPath(
+                        holePath1.getPathIterator(null, Configuration.FLATNESS));
+//                System.out.println("holePath = " + holePath);
+                path.getElements().addAll(0, holePath.getElements());
+            }
         }
     }
     

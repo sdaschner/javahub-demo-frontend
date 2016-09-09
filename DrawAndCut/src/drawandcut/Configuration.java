@@ -33,6 +33,7 @@ public class Configuration {
     public static final boolean DISABLE_CAMERA = Boolean.getBoolean("disableCamera");
     
     public static final double IN = 25.4; // mm
+    public static final double CM = 10; // mm
     
     public static final double MATERIAL_SIZE_X = Double.parseDouble(System.getProperty("materialSizeX", "200")); // mm
     public static final double MATERIAL_SIZE_Y = Double.parseDouble(System.getProperty("materialSizeY", "200")); // mm
@@ -70,6 +71,9 @@ public class Configuration {
     public static final int SCREEN_PADDING_BOTTOM = Integer.parseInt(System.getProperty("screenPaddingBottom", "0"));
     public static final int SCREEN_PADDING_LEFT = Integer.parseInt(System.getProperty("screenPaddingLeft", "0"));
     public static final int SCREEN_PADDING_RIGHT = Integer.parseInt(System.getProperty("screenPaddingRight", "0"));
+    
+    public static final double HOLE_DIAMETER = 6 / 32. * IN; // mm
+    public static final double HOLE_DISTANCE_FROM_EDGE = 2.5 * CM; // mm
     
     static {
         System.out.println("Configuration summary:");
