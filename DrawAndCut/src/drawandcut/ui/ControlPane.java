@@ -38,7 +38,7 @@ public class ControlPane extends GridPane {
 
 
     private final ToggleButton scan = new ToggleButton("Scan");
-    private final Button draw = new Button("Draw");
+    private final ToggleButton draw = new ToggleButton("Draw");
     private final Button cut = new Button("Cut");
     private final ToggleButton load = new ToggleButton("Load");
     private final Button exit = new Button("Exit");
@@ -78,7 +78,7 @@ public class ControlPane extends GridPane {
         return scan;
     }
     
-    public Button drawButton() {
+    public ToggleButton drawButton() {
         return draw;
     }
     

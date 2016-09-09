@@ -68,6 +68,11 @@ public class DrawAndCut extends Application {
         
         drawPane = new DrawPane();
         drawPane.setFocusTraversable(true);
+        drawPane.holeProperty().addListener(o -> {
+            if (drawPane.holeProperty().get() != null) {
+                controlPane.drawButton().setSelected(false);
+            }
+        });
         borderPane.setCenter(drawPane);
         
         ShapesPopup shapesPopup = new ShapesPopup(shapes);
@@ -121,7 +126,9 @@ public class DrawAndCut extends Application {
         controlPane.drawButton().setOnAction(t -> {
             showDrawPane();
             drawPane.drawShape();
+            controlPane.drawButton().setSelected(true);
         });
+        controlPane.drawButton().setSelected(true);
         
         scannerPane.setOnRead(code -> {
             String svg = shapes.get().get(code);
@@ -159,6 +166,7 @@ public class DrawAndCut extends Application {
 //            primaryStage.setScene(scannerScene);
         scannerPane.start();
         scannerPane.requestFocus();
+        controlPane.drawButton().setSelected(false);
     }
     
 }
