@@ -158,6 +158,10 @@ public class DrawPane extends BorderPane {
         title.setText("Position hole");
     }
     
+    public void readyToCut() {
+        title.setText("Ready to cut");
+    }
+    
     private double getX(InputEvent e) {
         if (e instanceof MouseEvent) {
             MouseEvent me = MouseEvent.class.cast(e);
@@ -223,6 +227,7 @@ public class DrawPane extends BorderPane {
             return;
         }
         drawing.get().positionHole(x, y);
+        readyToCut();
     }
     
     public void importSVG(String svg) {
