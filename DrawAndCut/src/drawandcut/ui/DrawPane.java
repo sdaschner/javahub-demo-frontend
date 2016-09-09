@@ -148,10 +148,10 @@ public class DrawPane extends BorderPane {
     public void positionHole() {
         canvas.setOnMousePressed(e -> positionHole(e));
         canvas.setOnMouseDragged(e -> positionHole(e));
-        canvas.setOnMouseReleased(e -> positionHole(e));
+        canvas.setOnMouseReleased(null);
         canvas.setOnTouchPressed(e -> positionHole(e));
         canvas.setOnTouchMoved(e -> positionHole(e));
-        canvas.setOnTouchReleased(e -> positionHole(e));
+        canvas.setOnTouchReleased(null);
         title.setText("Position badge holder hole");
     }
     
