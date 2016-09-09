@@ -163,7 +163,6 @@ public class DrawAndCut extends Application {
     
     private void showScannerPane() {
         borderPane.setCenter(scannerPane);
-//            primaryStage.setScene(scannerScene);
         scannerPane.start();
         scannerPane.requestFocus();
         controlPane.drawButton().setSelected(false);
