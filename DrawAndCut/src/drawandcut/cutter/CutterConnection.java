@@ -25,8 +25,6 @@ package drawandcut.cutter;
 
 import drawandcut.Configuration;
 import com.willwinder.universalgcodesender.GrblController;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -50,8 +48,7 @@ public class CutterConnection {
                 throw new IllegalStateException("Cannot open connection to the cutter");
             }
         } catch (Exception ex) {
-            Logger.getLogger(CutterConnection.class.getName())
-                    .log(Level.SEVERE, null, ex);
+            throw new IllegalStateException("Cannot connect to the cutter", ex);
         }
     }
 

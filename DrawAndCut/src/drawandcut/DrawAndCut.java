@@ -166,7 +166,12 @@ public class DrawAndCut extends Application {
         
         cutterConnection = new CutterConnection();
         if (!DISABLE_CUTTER) {
-            cutterConnection.connectToCutter();
+            try {
+                cutterConnection.connectToCutter();
+            } catch (Throwable t) {
+                t.printStackTrace();
+                System.exit(-1);
+            }                
         }
         
 //        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(0, 50), new ClosePath());
