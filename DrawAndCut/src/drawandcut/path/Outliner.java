@@ -34,4 +34,5 @@ import javafx.scene.shape.Path;
 public interface Outliner {
     public Path generateOutline(Path path);
     public Path generateFilledOutline(Path path);
+//    public Path generateHoleSafeZone(Path path);
 }
