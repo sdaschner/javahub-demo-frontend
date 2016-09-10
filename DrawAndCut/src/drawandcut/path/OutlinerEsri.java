@@ -26,11 +26,9 @@ package drawandcut.path;
 import com.esri.core.geometry.Geometry;
 import com.esri.core.geometry.OperatorBoundary;
 import com.esri.core.geometry.OperatorBuffer;
-import com.esri.core.geometry.OperatorUnion;
 import com.esri.core.geometry.Point;
 import com.esri.core.geometry.Polygon;
 import com.esri.core.geometry.Polyline;
-import drawandcut.Configuration;
 import static drawandcut.Configuration.*;
 import javafx.collections.ObservableList;
 import javafx.scene.shape.ClosePath;
@@ -55,7 +53,7 @@ public class OutlinerEsri implements Outliner {
         int pathCount = outlinePolyline.getPathCount();
         System.out.println("pathCount = " + pathCount);
         if (pathCount != 2) {
-            throw new IllegalArgumentException("The path cannot have intersections or have no interior outline");
+            throw new IllegalArgumentException("Path has intersections or has no interior");
         }   
 
         return convertToPath(outlinePolyline);

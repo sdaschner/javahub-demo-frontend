@@ -62,9 +62,11 @@ import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.control.Label;
+import javafx.scene.control.OverrunStyle;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontPosture;
 
 /**
  *
@@ -156,7 +158,6 @@ public class DrawPane extends BorderPane {
         canvas.setOnTouchPressed(e -> startDrawing(e));
         canvas.setOnTouchMoved(e -> continueDrawing(e));
         canvas.setOnTouchReleased(e -> stopDrawing(e));
-        title.setText("Draw shape");
         reset();
     }
     
@@ -226,8 +227,12 @@ public class DrawPane extends BorderPane {
         if (Double.isNaN(x) || Double.isNaN(y)) {
             return;
         }
-        drawing.get().stop(x, y);
-        positionHole();
+        try {
+            drawing.get().stop(x, y);
+            positionHole();
+        } catch (IllegalArgumentException iae) {
+            showErrorMessage(iae);
+        }
     }
     
     private void positionHole(InputEvent e) {
@@ -329,6 +334,8 @@ public class DrawPane extends BorderPane {
         stackPane.getChildren().removeAll(holeCircle, holeSafeZone);
         hole.set(null);
         canvas.getGraphicsContext2D().clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+        title.setTextFill(Color.WHITE);
+        title.setText("Draw shape");
     }
 
     public class Drawing {
@@ -413,6 +420,11 @@ public class DrawPane extends BorderPane {
             outlinePath.layoutYProperty().bind(canvas.layoutYProperty());
             outline.set(outlinePath);
         }
+    }
+    
+    private void showErrorMessage(Exception ex) {
+        title.setText(ex.getMessage());
+        title.setTextFill(Color.rgb(150, 0, 0));        
     }
 
     public ObjectProperty<Point2D> holeProperty() {

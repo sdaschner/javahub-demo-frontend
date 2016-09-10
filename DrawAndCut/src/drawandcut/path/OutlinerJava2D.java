@@ -53,7 +53,7 @@ public class OutlinerJava2D implements Outliner {
         int pathCount = (int) outline.getElements().stream().filter(elem -> elem instanceof MoveTo).count();
         System.out.println("pathCount = " + pathCount);
         if (pathCount != 2) {
-            throw new IllegalArgumentException("The path cannot have intersections or have no interior outline");
+            throw new IllegalArgumentException("Path has intersections or has no interior");
         }   
         return outline;
     }
