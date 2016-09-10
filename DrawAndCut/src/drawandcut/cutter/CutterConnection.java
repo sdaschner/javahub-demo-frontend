@@ -45,10 +45,14 @@ public class CutterConnection {
             cutter.bindToController(grblController);
             Boolean openCommPort = grblController.openCommPort(Configuration.PORT_NAME, 115200);
             if (openCommPort != true) {
-                throw new IllegalStateException("Cannot open connection to the cutter");
+                throw new IllegalStateException("Connection to cutter failed to open. "
+                        + "Use -DdisableCutter=true to run without cutter. "
+                        + "Use -DportName=/dev/ttyACM0 or -DportName=COM3 to specify port name.");
             }
         } catch (Exception ex) {
-            throw new IllegalStateException("Cannot connect to the cutter", ex);
+            throw new IllegalStateException("Cannot connect to the cutter. "
+                    + "Use -DdisableCutter=true to run without cutter. "
+                    + "Use -DportName=/dev/ttyACM0 or -DportName=COM3 to specify port name.", ex);
         }
     }
 
