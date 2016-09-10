@@ -37,12 +37,12 @@ public class Configuration {
     
     public static final double MATERIAL_SIZE_X = Double.parseDouble(System.getProperty("materialSizeX", "200")); // mm
     public static final double MATERIAL_SIZE_Y = Double.parseDouble(System.getProperty("materialSizeY", "200")); // mm
-    public static final double MATERIAL_SIZE_Z = 1 / 8. * IN; // mm
+    public static final double MATERIAL_SIZE_Z = Double.parseDouble(System.getProperty("materialSizeZ", "3.175")); // mm (1/8")
     public static final double MATERIAL_SIZE_RATIO = MATERIAL_SIZE_X / MATERIAL_SIZE_Y;
     
     public static final double MATERIAL_BASE_X = 0; // mm
     public static final double MATERIAL_BASE_Y = 0; // mm
-    public static final double MATERIAL_BASE_Z = 0; // mm
+    public static final double MATERIAL_BASE_Z = Double.parseDouble(System.getProperty("materialBaseZ", "0")); // mm
             
     public static final double TOOL_DIAMETER = 1 / 8. * IN; // mm
     
@@ -51,7 +51,7 @@ public class Configuration {
     public static final int RPM = Integer.parseInt(System.getProperty("rpm", "9000")); // rpm
     public static final double FEED = Double.parseDouble(System.getProperty("feed", Double.toString(44 * IN))); // mmpm
     public static final double PLUNGE_FEED = 14 * IN; // mmpm
-//    public static final double DOC = 0.019 * IN; // mm <-- recommended DOC
+    public static final double RECOMMENDED_DOC = 0.019 * IN; // 0.4826 mm <-- recommended DOC
     public static final int NUMBER_OF_PASSES = Integer.parseInt(System.getProperty("numberOfPasses", "7"));
     public static final double DOC = MATERIAL_SIZE_Z / NUMBER_OF_PASSES; // mm
     public static final double Z_ACCURACY = 0.01; // mm
@@ -80,13 +80,13 @@ public class Configuration {
         System.out.println("DISABLE_CUTTER = " + DISABLE_CUTTER);
         System.out.println("DISABLE_CAMERA = " + DISABLE_CAMERA);
         System.out.println("System.getProperty(\"disableCamera\") = " + System.getProperty("disableCamera"));
-        System.out.println("");
-        System.out.printf("Material size (X x Y x Z): %.1f x %.1f x %.3f mm\n", MATERIAL_SIZE_X, MATERIAL_SIZE_Y, MATERIAL_SIZE_Z);
-        System.out.printf("Number of passes: %d. Depth of one cut: %.3f mm\n", NUMBER_OF_PASSES, DOC);
+        System.out.println();
+        System.out.printf("Material size (X x Y x Z): %.1f x %.1f x %.3f mm. Bottom Z = %.3f mm.\n", MATERIAL_SIZE_X, MATERIAL_SIZE_Y, MATERIAL_SIZE_Z, MATERIAL_BASE_Z);
+        System.out.printf("Number of passes: %d. Depth of one cut: %.3f mm (Recommended: %.3f mm).\n", NUMBER_OF_PASSES, DOC, RECOMMENDED_DOC);
         System.out.printf("RPM: %d. Feed: %.0f mmpm, plunge feed: %.0f mmpm\n", RPM, FEED, PLUNGE_FEED);
-        
-        System.out.printf("Material size (X x Y x Z): %.2f x %.2f x %.3f in\n", MATERIAL_SIZE_X / IN, MATERIAL_SIZE_Y / IN, MATERIAL_SIZE_Z / IN);
-        System.out.printf("Number of passes: %d. Depth of one cut: %.4f in\n", NUMBER_OF_PASSES, DOC / IN);
+        System.out.println();        
+        System.out.printf("Material size (X x Y x Z): %.2f x %.2f x %.3f in. Bottom Z = %.3f in.\n", MATERIAL_SIZE_X / IN, MATERIAL_SIZE_Y / IN, MATERIAL_SIZE_Z / IN, MATERIAL_BASE_Z / IN);
+        System.out.printf("Number of passes: %d. Depth of one cut: %.4f in (Recommended: %.4f in).\n", NUMBER_OF_PASSES, DOC / IN, RECOMMENDED_DOC / IN);
         System.out.printf("RPM: %d. Feed: %.1f ipm, plunge feed: %.1f ipm\n", RPM, FEED / IN, PLUNGE_FEED / IN);
         
         System.out.println("");
