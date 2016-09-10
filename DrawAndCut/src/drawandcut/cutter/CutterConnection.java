@@ -34,13 +34,16 @@ import java.util.logging.Logger;
  */
 public class CutterConnection {
     
-    private GrblController grblController;
     private Cutter cutter;
     
     public void connectToCutter() {
-        cutter = new Cutter();
+        cutter = new Cutter(this::toConnect);
+        cutter.connect();
+    }
+    
+    private void toConnect() {
         try {
-            grblController = new GrblController();
+            GrblController grblController = new GrblController();
             cutter.bindToController(grblController);
             Boolean openCommPort = grblController.openCommPort(Configuration.PORT_NAME, 115200);
             if (openCommPort != true) {

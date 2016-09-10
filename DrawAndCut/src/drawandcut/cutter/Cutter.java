@@ -46,7 +46,16 @@ public class Cutter {
     private final Point3d workCoord = new Point3d();
     private final CutterListener listener = new CutterListener();
     private volatile InitSequenceState initState = InitSequenceState.NOT_CONNECTED;
-    private GrblController grblController;
+    private volatile GrblController grblController;
+    private final Runnable toConnect;
+
+    public Cutter(Runnable toConnect) {
+        this.toConnect = toConnect;
+    }
+    
+    public void connect() {
+        toConnect.run();
+    }
 
     public void bindToController(GrblController grblController) {
         this.grblController = grblController;
@@ -89,18 +98,18 @@ public class Cutter {
                         initState = InitSequenceState.PROBING2;
                         PROBE2[0] = "G0Z" + (machineCoord.z + 5);
                         System.out.println("PROBE2 = " + Arrays.toString(PROBE2));
-                        sendSequence(PROBE2);
+                        sendSequenceNoCheck(PROBE2);
                         break;
                     case PROBING2:
                         initState = InitSequenceState.PROBING3;
-                        sendSequence(PROBE3);
+                        sendSequenceNoCheck(PROBE3);
                         break;
                     case PROBING3:
                         initState = InitSequenceState.COORDINATE_RESET;
                         if (COORDINATE_RESET[0].equals(COORDINATE_RESET_TEMPLATE)) {
                             throw new IllegalStateException("Coordinates were not initialized properly!");
                         }
-                        sendSequence(COORDINATE_RESET);
+                        sendSequenceNoCheck(COORDINATE_RESET);
                         break;
                     case COORDINATE_RESET:
                         initState = InitSequenceState.READY;
@@ -138,7 +147,7 @@ public class Cutter {
                         break;
                     case HOMING:
                         initState = InitSequenceState.PROBING1;
-                        sendSequence(PROBE1);
+                        sendSequenceNoCheck(PROBE1);
                         break;
                 }
                 printState();
@@ -179,15 +188,19 @@ public class Cutter {
             if (!verbose && msg.contains("**** Connected to ") && initState == InitSequenceState.NOT_CONNECTED) {
                 initState = InitSequenceState.CONNECTED;
             } else if (!verbose && msg.contains("['$H'|'$X' to unlock]") && initState == InitSequenceState.CONNECTED) {
-                try {
-                    initState = InitSequenceState.HOMING;
-                    grblController.performHomingCycle();
-                } catch (Exception ex) {
-                    Logger.getLogger(Cutter.class.getName())
-                            .log(Level.SEVERE, null, ex);
-                }
+                performHoming();
             } else if (!verbose && msg.contains("error")) {
                 throw new IllegalStateException("Error happened");
+            }
+        }
+        
+        private void performHoming() {
+            try {
+                initState = InitSequenceState.HOMING;
+                grblController.performHomingCycle();
+            } catch (Exception ex) {
+                Logger.getLogger(Cutter.class.getName())
+                        .log(Level.SEVERE, null, ex);
             }
         }
 
@@ -198,6 +211,24 @@ public class Cutter {
             Cutter.this.state = state;
             Cutter.this.machineCoord.set(machineCoord);
             Cutter.this.workCoord.set(workCoord);
+            
+            if ("Alarm".equals(state)) {
+                recoverFromFailure();
+            }
+        }
+        
+        private void recoverFromFailure() {
+            try {
+                grblController.cancelSend();
+                grblController.closeCommPort();
+                grblController = null;
+                initState = InitSequenceState.NOT_CONNECTED;
+                
+                toConnect.run();
+            } catch (Exception ex) {
+                Logger.getLogger(Cutter.class.getName())
+                        .log(Level.SEVERE, null, ex);
+            }
         }
 
         @Override
@@ -215,6 +246,13 @@ public class Cutter {
     }
 
     public void sendSequence(String[] sequence) {
+        if (initState != InitSequenceState.READY) {
+            throw new IllegalStateException("Cutter is not ready!");
+        }
+        sendSequenceNoCheck(sequence);
+    }
+    
+    private void sendSequenceNoCheck(String[] sequence) {
         try {
             for (String command : sequence) {
                 // I've tried sendImmediately here but it is not very reliable
@@ -224,5 +262,6 @@ public class Cutter {
         } catch (Exception ex) {
             Logger.getLogger(Cutter.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }
+    }   
+    
 }
