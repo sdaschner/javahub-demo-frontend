@@ -86,6 +86,7 @@ public class DrawPane extends BorderPane {
     private final Circle holeCircle;
     private final Circle holeSafeZone;
     private final Outliner outliner = new OutlinerEsri();
+    private double margin;
 //    private final Outliner outliner = new OutlinerJava2D();
 
 
@@ -115,6 +116,7 @@ public class DrawPane extends BorderPane {
         canvas.widthProperty().addListener(e -> {
             pxPerMm.set(canvas.getWidth() / MATERIAL_SIZE_X);
             canvas.getGraphicsContext2D().setLineWidth(MOTIF_WIDTH_MM * pxPerMm.get());
+            margin = MOTIF_WIDTH_MM * pxPerMm.get() / 2;
         });
         
         title = new Label("Draw");
@@ -333,18 +335,24 @@ public class DrawPane extends BorderPane {
         private Path p = new Path();
 
         private Drawing(double x, double y) {
+            x = clampX(x); 
+            y = clampY(y);
             p.getElements().add(new MoveTo(convertX(x), convertY(y)));
             canvas.getGraphicsContext2D().beginPath();
             canvas.getGraphicsContext2D().moveTo(x, y);
         }
         
         private void continueTo(double x, double y) {
+            x = clampX(x); 
+            y = clampY(y);
             p.getElements().add(new LineTo(convertX(x), convertY(y)));
             canvas.getGraphicsContext2D().lineTo(x, y);
             canvas.getGraphicsContext2D().stroke();
         }
         
         private void stop(double x, double y) {
+            x = clampX(x); 
+            y = clampY(y);
             p.getElements().add(new LineTo(convertX(x), convertY(y)));
             p.getElements().add(new ClosePath());
             canvas.getGraphicsContext2D().lineTo(x, y);
@@ -354,6 +362,8 @@ public class DrawPane extends BorderPane {
         }
 
         private void positionHole(double x, double y) {
+            x = clampX(x); 
+            y = clampY(y);
             hole.set(new Point2D(convertX(x), convertY(y)));
 
             holeCircle.setCenterX(x);
@@ -362,6 +372,14 @@ public class DrawPane extends BorderPane {
                 stackPane.getChildren().add(holeCircle);
                 stackPane.getChildren().add(holeSafeZone);
             }
+        }
+        
+        private double clampX(double x) {
+            return Math.max(margin, Math.min(x, canvas.getWidth() - margin));
+        }
+        
+        private double clampY(double y) {
+            return Math.max(margin, Math.min(y, canvas.getHeight() - margin));
         }
         
         private double convertX(double x) {
