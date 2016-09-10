@@ -26,8 +26,11 @@ package drawandcut.path;
 import com.esri.core.geometry.Geometry;
 import com.esri.core.geometry.OperatorBoundary;
 import com.esri.core.geometry.OperatorBuffer;
+import com.esri.core.geometry.OperatorUnion;
 import com.esri.core.geometry.Point;
+import com.esri.core.geometry.Polygon;
 import com.esri.core.geometry.Polyline;
+import drawandcut.Configuration;
 import static drawandcut.Configuration.*;
 import javafx.collections.ObservableList;
 import javafx.scene.shape.ClosePath;
@@ -47,23 +50,28 @@ public class OutlinerEsri implements Outliner {
         Polyline path2D = convertToPolyline(path);
         Geometry buffer = OperatorBuffer.local().execute(path2D, null, (MOTIF_WIDTH_MM + TOOL_DIAMETER) / 2, null);
         Geometry outlineGeom = OperatorBoundary.local().execute(buffer, null);
-
-        Path outline = new Path();
+        
         Polyline outlinePolyline = (Polyline) outlineGeom;
         int pathCount = outlinePolyline.getPathCount();
         System.out.println("pathCount = " + pathCount);
         if (pathCount != 2) {
             throw new IllegalArgumentException("The path cannot have intersections or have no interior outline");
         }   
-        
+
+        return convertToPath(outlinePolyline);
+    }
+    
+    private static Path convertToPath(Polyline polyline) {
+        Path outline = new Path();
         Point p = new Point();
+        int pathCount = polyline.getPathCount();
         for (int i = 0; i < pathCount; i++) {
-            int ps = outlinePolyline.getPathStart(i);
-            int pe = outlinePolyline.getPathEnd(i);
-            outlinePolyline.getPoint(ps, p);
+            int ps = polyline.getPathStart(i);
+            int pe = polyline.getPathEnd(i);
+            polyline.getPoint(ps, p);
             outline.getElements().add(new MoveTo(p.getX(), p.getY()));
             for (int j = ps + 1; j < pe; j++) {
-                outlinePolyline.getPoint(j, p);
+                polyline.getPoint(j, p);
                 outline.getElements().add(new LineTo(p.getX(), p.getY()));
             }
             outline.getElements().add(new ClosePath());
@@ -71,7 +79,7 @@ public class OutlinerEsri implements Outliner {
         return outline;
     }
 
-    private Polyline convertToPolyline(Path path) throws UnsupportedOperationException {
+    private static Polyline convertToPolyline(Path path) throws UnsupportedOperationException {
         Polyline polyline = new Polyline();
         ObservableList<PathElement> elements = path.getElements();
         for (PathElement element : elements) {
@@ -90,8 +98,38 @@ public class OutlinerEsri implements Outliner {
         return polyline;
     }
 
+    private static Polygon convertToPolygon(Path path) throws UnsupportedOperationException {
+        Polygon polygon = new Polygon();
+        ObservableList<PathElement> elements = path.getElements();
+        for (PathElement element : elements) {
+            if (element instanceof MoveTo) {
+                MoveTo mt = (MoveTo) element;
+                polygon.startPath(mt.getX(), mt.getY());
+            } else if (element instanceof LineTo) {
+                LineTo lt = (LineTo) element;
+                polygon.lineTo(lt.getX(), lt.getY());
+            } else if (element instanceof ClosePath) {
+                polygon.closePathWithLine();
+            } else {
+                throw new UnsupportedOperationException("This PathElement is not supported: " + element);
+            }
+        }
+        return polygon;
+    }
+
     @Override
     public Path generateFilledOutline(Path path) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        Polygon polygon = convertToPolygon(path);
+        Geometry outline = OperatorBuffer.local().execute(polygon, null, TOOL_DIAMETER / 2, null);
+        Geometry outlineGeom = OperatorBoundary.local().execute(outline, null);
+        
+        Polyline outlinePolyline = (Polyline) outlineGeom;
+        int pathCount = outlinePolyline.getPathCount();
+        System.out.println("pathCount = " + pathCount);
+//        if (pathCount != 2) {
+//            throw new IllegalArgumentException("The path cannot have intersections or have no interior outline");
+//        }   
+
+        return convertToPath(outlinePolyline);
     }
 }
