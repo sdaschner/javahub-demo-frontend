@@ -43,7 +43,7 @@ import javafx.scene.shape.PathElement;
 public class PathConverter {
     
     private final GCodeGenerator gcg = new GCodeGenerator();
-    private final Path path;
+    private Path path;
     private final Point2D hole;
     private final double feed;
     private final double plungeFeed;
@@ -80,6 +80,7 @@ public class PathConverter {
                 Path holePath = PathConversions.convertToPath(
                         holePath1.getPathIterator(null, Configuration.FLATNESS));
 //                System.out.println("holePath = " + holePath);
+                path = new Path(path.getElements());
                 path.getElements().addAll(0, holePath.getElements());
             }
         }
