@@ -23,8 +23,6 @@
  */
 package drawandcut.ui;
 
-import com.esri.core.geometry.OperatorGeneralize;
-import com.esri.core.geometry.Polyline;
 import drawandcut.Configuration;
 import static drawandcut.Configuration.MATERIAL_SIZE_X;
 import static drawandcut.Configuration.MATERIAL_SIZE_Y;
@@ -59,11 +57,7 @@ import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
 import static drawandcut.Configuration.MOTIF_WIDTH_MM;
 import drawandcut.path.OutlinerEsri;
-import drawandcut.path.Smoother;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
+import drawandcut.path.OutlinerJava2D;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Bounds;
@@ -95,8 +89,6 @@ public class DrawPane extends BorderPane {
     private final Circle holeCircle;
     private final Outliner outliner = new OutlinerEsri();
 //    private final Outliner outliner = new OutlinerJava2D();
-    
-    private final Path smoothedPath = new Path();
 
 
     public DrawPane() {
@@ -144,12 +136,6 @@ public class DrawPane extends BorderPane {
         holeCircle.setMouseTransparent(true);
         holeCircle.layoutXProperty().bind(canvas.layoutXProperty());
         holeCircle.layoutYProperty().bind(canvas.layoutYProperty());
-        
-        smoothedPath.setManaged(false);
-        smoothedPath.setStroke(Color.RED);
-        smoothedPath.layoutXProperty().bind(canvas.layoutXProperty());
-        smoothedPath.layoutYProperty().bind(canvas.layoutYProperty());
-        stackPane.getChildren().add(smoothedPath);
     }
     
     public void drawShape() {
@@ -332,57 +318,30 @@ public class DrawPane extends BorderPane {
         stackPane.getChildren().remove(holeCircle);
         hole.set(null);
         canvas.getGraphicsContext2D().clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
-        smoothedPath.getElements().clear();
     }
 
     public class Drawing {
         private Path p = new Path();
-        private List<Point2D> points = new ArrayList<>();
 
         private Drawing(double x, double y) {
             p.getElements().add(new MoveTo(convertX(x), convertY(y)));
             canvas.getGraphicsContext2D().beginPath();
             canvas.getGraphicsContext2D().moveTo(x, y);
-            points.add(new Point2D(x, y));
-            smooth();
         }
         
         private void continueTo(double x, double y) {
             p.getElements().add(new LineTo(convertX(x), convertY(y)));
             canvas.getGraphicsContext2D().lineTo(x, y);
             canvas.getGraphicsContext2D().stroke();
-            points.add(new Point2D(x, y));
-            smooth();
         }
         
         private void stop(double x, double y) {
-//            p.getElements().add(new LineTo(convertX(x), convertY(y)));
+            p.getElements().add(new LineTo(convertX(x), convertY(y)));
             p.getElements().add(new ClosePath());
             canvas.getGraphicsContext2D().lineTo(x, y);
             canvas.getGraphicsContext2D().closePath();
             canvas.getGraphicsContext2D().stroke();
-//            generateOutline();
-            points.add(new Point2D(x, y));
-            points.add(points.get(0));
-            smooth();
-        }
-        
-        private void smooth() {
-            Polyline polyline = new Polyline();
-            if (points.size() > 0) {
-                polyline.startPath(points.get(0).getX(), points.get(0).getY());
-                for (int i = 1; i < points.size(); i++) {
-                    polyline.lineTo(points.get(i).getX(), points.get(i).getY());
-                }
-                Polyline generalizedPolyline = (Polyline) OperatorGeneralize.local().execute(polyline, 10,
-                        true, null);
-                List<Point2D> smoothedPoints
-                        = Arrays.asList(generalizedPolyline.getCoordinates2D())
-                                .stream()
-                                .map(p -> new Point2D(p.x, p.y))
-                                .collect(Collectors.toList());
-                smoothedPath.getElements().setAll(Smoother.smooth(smoothedPoints.toArray(new Point2D[smoothedPoints.size()])));
-            }
+            generateOutline();
         }
 
         private void positionHole(double x, double y) {

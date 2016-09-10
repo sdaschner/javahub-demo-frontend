@@ -26,7 +26,6 @@ package drawandcut.path;
 import com.esri.core.geometry.Geometry;
 import com.esri.core.geometry.OperatorBoundary;
 import com.esri.core.geometry.OperatorBuffer;
-import com.esri.core.geometry.OperatorGeneralize;
 import com.esri.core.geometry.OperatorUnion;
 import com.esri.core.geometry.Point;
 import com.esri.core.geometry.Polygon;
@@ -48,8 +47,8 @@ public class OutlinerEsri implements Outliner {
     
     @Override
     public Path generateOutline(Path path) {
-        Polyline polyline = convertToPolyline(path);
-        Geometry buffer = OperatorBuffer.local().execute(polyline, null, (MOTIF_WIDTH_MM + TOOL_DIAMETER) / 2, null);
+        Polyline path2D = convertToPolyline(path);
+        Geometry buffer = OperatorBuffer.local().execute(path2D, null, (MOTIF_WIDTH_MM + TOOL_DIAMETER) / 2, null);
         Geometry outlineGeom = OperatorBoundary.local().execute(buffer, null);
         
         Polyline outlinePolyline = (Polyline) outlineGeom;
@@ -62,7 +61,7 @@ public class OutlinerEsri implements Outliner {
         return convertToPath(outlinePolyline);
     }
     
-    public static Path convertToPath(Polyline polyline) {
+    private static Path convertToPath(Polyline polyline) {
         Path outline = new Path();
         Point p = new Point();
         int pathCount = polyline.getPathCount();
@@ -80,7 +79,7 @@ public class OutlinerEsri implements Outliner {
         return outline;
     }
 
-    public static Polyline convertToPolyline(Path path) throws UnsupportedOperationException {
+    private static Polyline convertToPolyline(Path path) throws UnsupportedOperationException {
         Polyline polyline = new Polyline();
         ObservableList<PathElement> elements = path.getElements();
         for (PathElement element : elements) {
@@ -99,7 +98,7 @@ public class OutlinerEsri implements Outliner {
         return polyline;
     }
 
-    public static Polygon convertToPolygon(Path path) throws UnsupportedOperationException {
+    private static Polygon convertToPolygon(Path path) throws UnsupportedOperationException {
         Polygon polygon = new Polygon();
         ObservableList<PathElement> elements = path.getElements();
         for (PathElement element : elements) {
