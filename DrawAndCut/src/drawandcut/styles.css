@@ -4,7 +4,7 @@
 }
 
 #drawPane, #shapesPane, #scannerPane {
-    -fx-background-color: A9A9A9;
+    -fx-background-color: #5382A1;
 }
 
 .svg-path {

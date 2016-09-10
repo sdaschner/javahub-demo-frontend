@@ -60,6 +60,7 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
+import javafx.geometry.VPos;
 import javafx.scene.Group;
 import javafx.scene.control.Label;
 import javafx.scene.control.OverrunStyle;
@@ -67,6 +68,8 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontPosture;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.TextAlignment;
 
 /**
  *
@@ -423,8 +426,11 @@ public class DrawPane extends BorderPane {
     }
     
     private void showErrorMessage(Exception ex) {
-        title.setText(ex.getMessage());
-        title.setTextFill(Color.rgb(150, 0, 0));        
+        canvas.getGraphicsContext2D().setFill(Color.RED);
+        canvas.getGraphicsContext2D().setFont(Font.font(20));
+        canvas.getGraphicsContext2D().setTextAlign(TextAlignment.CENTER);
+        canvas.getGraphicsContext2D().setTextBaseline(VPos.BOTTOM);
+        canvas.getGraphicsContext2D().fillText(ex.getMessage(), canvas.getWidth() / 2, canvas.getHeight() - PADDING, canvas.getWidth() - 2 * PADDING);
     }
 
     public ObjectProperty<Point2D> holeProperty() {
