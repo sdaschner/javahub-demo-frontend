@@ -41,6 +41,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import drawandcut.ui.ScannerPane;
 import drawandcut.ui.ShapesPane;
+import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.Background;
@@ -69,6 +70,17 @@ public class DrawAndCut extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
+
+        cutterConnection = new CutterConnection();
+        if (!DISABLE_CUTTER) {
+            try {
+                cutterConnection.connectToCutter();
+            } catch (Throwable t) {
+                t.printStackTrace();
+                System.exit(-1);
+            }                
+        }
+        
         borderPane = new BorderPane();
         borderPane.setBackground(Background.EMPTY);
         borderPane.setPadding(new Insets(
@@ -109,7 +121,10 @@ public class DrawAndCut extends Application {
         controlPane.cutButton().disableProperty().bind(
                 drawPane.outlineProperty().isNull()
                         .or(drawPane.holeProperty().isNull())
-                        .or(borderPane.centerProperty().isEqualTo(scannerPane)));
+                        .or(borderPane.centerProperty().isEqualTo(scannerPane))
+                        .or(DISABLE_CUTTER 
+                                ? Bindings.createBooleanBinding(() -> false) 
+                                : cutterConnection.getCutter().ready().not()));
         controlPane.cutButton().setOnAction(t -> {
             List<String> output = new PathConverter(
                     drawPane.outlineProperty().get(), 
@@ -163,16 +178,6 @@ public class DrawAndCut extends Application {
         primaryStage.setOnCloseRequest(e -> System.exit(0));
         drawScene.getStylesheets().add(
                 DrawAndCut.class.getResource("styles.css").toExternalForm());
-        
-        cutterConnection = new CutterConnection();
-        if (!DISABLE_CUTTER) {
-            try {
-                cutterConnection.connectToCutter();
-            } catch (Throwable t) {
-                t.printStackTrace();
-                System.exit(-1);
-            }                
-        }
         
 //        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(0, 50), new ClosePath());
 //        Outliner outliner = new Outliner(path);

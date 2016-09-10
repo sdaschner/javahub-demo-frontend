@@ -33,6 +33,8 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javafx.application.Platform;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javax.vecmath.Point3d;
 
 /**
@@ -48,6 +50,7 @@ public class Cutter {
     private volatile InitSequenceState initState = InitSequenceState.NOT_CONNECTED;
     private volatile GrblController grblController;
     private final Runnable toConnect;
+    private final ReadOnlyBooleanWrapper ready = new ReadOnlyBooleanWrapper(false);
 
     public Cutter(Runnable toConnect) {
         this.toConnect = toConnect;
@@ -113,6 +116,10 @@ public class Cutter {
                         break;
                     case COORDINATE_RESET:
                         initState = InitSequenceState.READY;
+                        ready.set(true);
+                        break;
+                    case READY:
+                        ready.set(true);
                         break;
                 }
                 printState();
@@ -218,6 +225,7 @@ public class Cutter {
         }
         
         private void recoverFromFailure() {
+            ready.set(false);
             try {
                 grblController.cancelSend();
                 grblController.closeCommPort();
@@ -250,6 +258,7 @@ public class Cutter {
             throw new IllegalStateException("Cutter is not ready!");
         }
         sendSequenceNoCheck(sequence);
+        ready.set(false);
     }
     
     private void sendSequenceNoCheck(String[] sequence) {
@@ -262,6 +271,9 @@ public class Cutter {
         } catch (Exception ex) {
             Logger.getLogger(Cutter.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }   
-    
+    }
+
+    public ReadOnlyBooleanProperty ready() {
+        return ready.getReadOnlyProperty();
+    }    
 }
