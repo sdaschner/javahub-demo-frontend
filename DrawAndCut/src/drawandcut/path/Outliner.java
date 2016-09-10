@@ -23,62 +23,16 @@
  */
 package drawandcut.path;
 
-import drawandcut.Configuration;
-import java.awt.BasicStroke;
-import java.awt.Shape;
-import java.awt.geom.Area;
-import java.awt.geom.Path2D;
-import java.awt.geom.PathIterator;
-import javafx.scene.shape.MoveTo;
+
 import javafx.scene.shape.Path;
+
 
 /**
  *
  * @author akouznet
  */
-public class Outliner {
-    private final Path path;
-
-    public Outliner(Path path) {
-        this.path = path;
-    }
-    
-    public Path generateOutline() {
-        Path2D path2D = PathConversions.convertToPath2D(path);
-        BasicStroke basicStroke = new BasicStroke(
-                (float) (Configuration.MOTIF_WIDTH_MM + Configuration.TOOL_DIAMETER), 
-                BasicStroke.CAP_ROUND, 
-                BasicStroke.JOIN_ROUND);
-        Shape strokedShape = basicStroke.createStrokedShape(path2D);
-        Area area = new Area(strokedShape);
-        PathIterator pathIterator = area.getPathIterator(null, Configuration.FLATNESS);
-        Path outline = PathConversions.convertToPath(pathIterator);
-        int pathCount = (int) outline.getElements().stream().filter(elem -> elem instanceof MoveTo).count();
-        System.out.println("pathCount = " + pathCount);
-        if (pathCount != 2) {
-            throw new IllegalArgumentException("The path cannot have intersections or have no interior outline");
-        }   
-        return outline;
-    }
-    
-    public Path generateFilledOutline() {
-        Path2D path2D = PathConversions.convertToPath2D(path);        
-        System.out.println("path2D.getBounds2D() = " + path2D.getBounds2D());
-        BasicStroke basicStroke = new BasicStroke(
-                (float) (Configuration.TOOL_DIAMETER/* * 0.75*/), 
-                BasicStroke.CAP_ROUND, 
-                BasicStroke.JOIN_ROUND);
-        Shape strokedShape = basicStroke.createStrokedShape(path2D);
-        Area area = new Area(strokedShape);
-        area.add(new Area(path2D));        
-        PathIterator pathIterator = area.getPathIterator(null, Configuration.FLATNESS);
-        Path outline = PathConversions.convertToPath(pathIterator);
-        int pathCount = (int) outline.getElements().stream().filter(elem -> elem instanceof MoveTo).count();
-        System.out.println("pathCount = " + pathCount);
-        System.out.println("outline.getBoundsInLocal() = " + outline.getBoundsInLocal());
-//        if (pathCount != 2) {
-//            throw new IllegalArgumentException("The path cannot have intersections or have no interior outline");
-//        }   
-        return outline;
-    }
+public interface Outliner {
+    public Path generateOutline(Path path);
+    public Path generateFilledOutline(Path path);
+//    public Path generateHoleSafeZone(Path path);
 }
