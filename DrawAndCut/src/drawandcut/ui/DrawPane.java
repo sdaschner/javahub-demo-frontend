@@ -24,8 +24,7 @@
 package drawandcut.ui;
 
 import drawandcut.Configuration;
-import static drawandcut.Configuration.MATERIAL_SIZE_X;
-import static drawandcut.Configuration.MATERIAL_SIZE_Y;
+import static drawandcut.Configuration.*;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -55,9 +54,7 @@ import javafx.scene.shape.SVGPath;
 import javafx.scene.shape.Shape;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
-import static drawandcut.Configuration.MOTIF_WIDTH_MM;
 import drawandcut.path.OutlinerEsri;
-import drawandcut.path.OutlinerJava2D;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Bounds;
@@ -87,6 +84,7 @@ public class DrawPane extends BorderPane {
     private ObjectProperty<Point2D> hole = new SimpleObjectProperty<>();
     private Group g;
     private final Circle holeCircle;
+    private final Circle holeSafeZone;
     private final Outliner outliner = new OutlinerEsri();
 //    private final Outliner outliner = new OutlinerJava2D();
 
@@ -103,7 +101,7 @@ public class DrawPane extends BorderPane {
                 },
                 stackPane.widthProperty(), stackPane.heightProperty()));
         canvas.heightProperty().bind(Bindings.createDoubleBinding(() -> {
-                    return Math.min(stackPane.widthProperty().get() / Configuration.MATERIAL_SIZE_RATIO, stackPane.heightProperty().get());
+                    return Math.min(stackPane.widthProperty().get() / MATERIAL_SIZE_RATIO, stackPane.heightProperty().get());
                 },
                 stackPane.widthProperty(), stackPane.heightProperty()));
         canvasBackground.maxWidthProperty().bind(canvas.widthProperty());
@@ -115,7 +113,7 @@ public class DrawPane extends BorderPane {
         canvas.getGraphicsContext2D().setStroke(CUT_COLOR);
         
         canvas.widthProperty().addListener(e -> {
-            pxPerMm.set(canvas.getWidth() / Configuration.MATERIAL_SIZE_X);
+            pxPerMm.set(canvas.getWidth() / MATERIAL_SIZE_X);
             canvas.getGraphicsContext2D().setLineWidth(MOTIF_WIDTH_MM * pxPerMm.get());
         });
         
@@ -130,15 +128,26 @@ public class DrawPane extends BorderPane {
         drawShape();
         
         holeCircle = new Circle();
-        holeCircle.radiusProperty().bind(pxPerMm.multiply(Configuration.HOLE_DIAMETER / 2));
+        holeCircle.radiusProperty().bind(pxPerMm.multiply(HOLE_DIAMETER / 2));
         holeCircle.setFill(CUT_COLOR);
         holeCircle.setManaged(false);
         holeCircle.setMouseTransparent(true);
         holeCircle.layoutXProperty().bind(canvas.layoutXProperty());
         holeCircle.layoutYProperty().bind(canvas.layoutYProperty());
+        
+        holeSafeZone = new Circle();
+        holeSafeZone.radiusProperty().bind(pxPerMm.multiply((HOLE_DISTANCE_FROM_EDGE + HOLE_DIAMETER) / 2));
+        holeSafeZone.setStroke(Color.web("#7999AC"));
+        holeSafeZone.setFill(Color.TRANSPARENT);
+        holeSafeZone.setManaged(false);
+        holeSafeZone.setMouseTransparent(true);
+        holeSafeZone.layoutXProperty().bind(canvas.layoutXProperty());
+        holeSafeZone.layoutYProperty().bind(canvas.layoutYProperty());
+        holeSafeZone.centerXProperty().bind(holeCircle.centerXProperty());
+        holeSafeZone.centerYProperty().bind(holeCircle.centerYProperty());
     }
     
-    public void drawShape() {
+    public final void drawShape() {
         canvas.setOnMousePressed(e -> startDrawing(e));
         canvas.setOnMouseDragged(e -> continueDrawing(e));
         canvas.setOnMouseReleased(e -> stopDrawing(e));
@@ -315,7 +324,7 @@ public class DrawPane extends BorderPane {
             stackPane.getChildren().remove(g);
             g = null;
         }
-        stackPane.getChildren().remove(holeCircle);
+        stackPane.getChildren().removeAll(holeCircle, holeSafeZone);
         hole.set(null);
         canvas.getGraphicsContext2D().clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
     }
@@ -351,6 +360,7 @@ public class DrawPane extends BorderPane {
             holeCircle.setCenterY(y);
             if (!stackPane.getChildren().contains(holeCircle)) {
                 stackPane.getChildren().add(holeCircle);
+                stackPane.getChildren().add(holeSafeZone);
             }
         }
         
