@@ -250,7 +250,7 @@ public class DrawPane extends BorderPane {
         readyToCut();
     }
     
-    public void importSVG(String svg) {
+    public void importSVG(String svg, double size) {
         SVGPath svgPath = new SVGPath();
         svgPath.setContent(svg);
         svgPath.setFillRule(FillRule.EVEN_ODD);
@@ -258,8 +258,8 @@ public class DrawPane extends BorderPane {
         Bounds b = svgPath.getBoundsInLocal();
         if (b.getWidth() != 0 && b.getHeight() != 0) {
             double scale = Math.min(
-                    MATERIAL_SIZE_X / b.getWidth(), 
-                    MATERIAL_SIZE_Y / b.getHeight());            
+                    Math.min(size, MATERIAL_SIZE_X) / b.getWidth(), 
+                    Math.min(size, MATERIAL_SIZE_Y) / b.getHeight());            
             svgPath.getTransforms().addAll(
                     new Translate(
                             -b.getMinX() * scale + (MATERIAL_SIZE_X - b.getWidth() * scale) / 2, 

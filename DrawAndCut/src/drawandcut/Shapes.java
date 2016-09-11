@@ -37,8 +37,8 @@ import java.util.logging.Logger;
  */
 public class Shapes {
     
-    private final Map<String, String> shapes = new HashMap<>();
-    private final Map<String, String> unmodifiableMap = Collections.unmodifiableMap(shapes);
+    private final Map<String, Shape> shapes = new HashMap<>();
+    private final Map<String, Shape> unmodifiableMap = Collections.unmodifiableMap(shapes);
 
     public Shapes() {
         load();
@@ -48,15 +48,48 @@ public class Shapes {
         try {
             Properties props = new Properties();
             props.load(Shapes.class.getResourceAsStream("shapes.properties"));
-            props.keySet().forEach(key -> shapes.put((String) key, (String) props.get(key)));
-            //drawPane.importSVG(props.getProperty("bird"));
+            props.keySet().forEach(k -> {
+                String key = (String) k;
+                double size = 200;
+                switch (key) {
+                    case "child":
+                        size = 138;
+                        break;
+                    case "bird":
+                        shapes.put("big bird", new Shape((String) props.get(key), size));
+                        shapes.put("small bird", new Shape((String) props.get(key), 140));
+                        return;
+                    case "key":
+                        size = 157;
+                        break;
+                }
+                shapes.put(key, new Shape((String) props.get(key), size));
+            });
         } catch (IOException ex) {
             Logger.getLogger(DrawAndCut.class.getName())
                     .log(Level.SEVERE, null, ex);            
         }
     }
 
-    public Map<String, String> get() {
+    public Map<String, Shape> get() {
         return unmodifiableMap;
+    }
+    
+    public static class Shape {
+        private final String svg;
+        private final double size;
+
+        public Shape(String svg, double size) {
+            this.svg = svg;
+            this.size = size;
+        }
+
+        public double getSize() {
+            return size;
+        }
+
+        public String getSvg() {
+            return svg;
+        }
     }
 }

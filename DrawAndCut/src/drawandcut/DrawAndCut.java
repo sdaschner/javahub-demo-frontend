@@ -24,6 +24,7 @@
 package drawandcut;
 
 import static drawandcut.Configuration.*;
+import drawandcut.Shapes.Shape;
 import drawandcut.cutter.Cutter;
 import drawandcut.cutter.CutterConnection;
 import drawandcut.gcode.PathConverter;
@@ -104,7 +105,8 @@ public class DrawAndCut extends Application {
         
         shapesPane = new ShapesPane(shapes);
         shapesPane.setOnAction(key -> {
-            drawPane.importSVG(shapes.get().get(key));
+            Shapes.Shape shape = shapes.get().get(key);
+            drawPane.importSVG(shape.getSvg(), shape.getSize());
             showDrawPane();
         });
         
@@ -166,9 +168,9 @@ public class DrawAndCut extends Application {
         controlPane.drawButton().setSelected(true);
         
         scannerPane.setOnRead(code -> {
-            String svg = shapes.get().get(code);
-            if (svg != null) {
-                drawPane.importSVG(svg);
+            Shape shape = shapes.get().get(code);
+            if (shape != null) {
+                drawPane.importSVG(shape.getSvg(), shape.getSize());
             }
             showDrawPane();
         });

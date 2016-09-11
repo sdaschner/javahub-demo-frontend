@@ -28,11 +28,13 @@ import drawandcut.Shapes;
 import java.util.function.Consumer;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.paint.Color;
@@ -54,19 +56,21 @@ public class ShapesPane extends BorderPane {
         flowPane.setVgap(PADDING);
         flowPane.setHgap(PADDING);
         flowPane.setAlignment(Pos.CENTER);
-        flowPane.setColumnHalignment(HPos.LEFT);
+        flowPane.setColumnHalignment(HPos.CENTER);
         flowPane.setRowValignment(VPos.CENTER);
         flowPane.setMaxWidth(USE_PREF_SIZE);
+        flowPane.setMaxHeight(USE_PREF_SIZE);
         flowPane.setPadding(new Insets(0, 50, 0, 50));
         shapes.get().forEach((key, shape) -> {
             SVGPath svgPath = new SVGPath();
             svgPath.getStyleClass().add("svg-path");
-            svgPath.setContent(shape);
+            svgPath.setContent(shape.getSvg());
             svgPath.setFillRule(FillRule.EVEN_ODD);
             ScalableNodePane scalableNodePane = new ScalableNodePane(svgPath);
-            scalableNodePane.setMinSize(100, 100);
-            scalableNodePane.setPrefSize(100, 100);
+            scalableNodePane.setMinSize(shape.getSize() / 2, shape.getSize() / 2);
+            scalableNodePane.setPrefSize(shape.getSize() / 2, shape.getSize() / 2);
             Button button = new Button(key, scalableNodePane);
+            button.setPrefSize(100, 100);
             button.setOnAction(t -> {
                 if (onAction != null) {
                     onAction.accept(key);
@@ -80,10 +84,17 @@ public class ShapesPane extends BorderPane {
         title.setFont(Font.font(25));
         BorderPane.setAlignment(title, Pos.CENTER);
         
+        ScrollPane scrollPane = new ScrollPane(flowPane);
+        scrollPane.setPannable(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setMaxWidth(USE_PREF_SIZE);
+        scrollPane.setMaxHeight(USE_PREF_SIZE);
+        
         setId("shapesPane");
         setPadding(new Insets(PADDING));        
         setTop(title);
-        setCenter(flowPane);
+        setCenter(scrollPane);
     }
 
     public void setOnAction(Consumer<String> onAction) {
