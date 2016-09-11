@@ -437,7 +437,6 @@ public class DrawPane extends BorderPane {
             outlinePath.getTransforms().addAll(
                     new Translate(0, -Configuration.MATERIAL_SIZE_Y), 
                     new Scale(pxPerMm.get(), -pxPerMm.get(), 0, Configuration.MATERIAL_SIZE_Y));
-            pathThin.getElements().clear();
             pathThick.getElements().clear();
             stackPane.getChildren().add(outlinePath);
             outlinePath.setMouseTransparent(true);
