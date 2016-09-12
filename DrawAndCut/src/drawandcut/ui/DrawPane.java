@@ -57,6 +57,7 @@ import drawandcut.path.OutlinerEsri;
 import java.util.stream.Collectors;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.collections.ObservableList;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
@@ -66,6 +67,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.PathElement;
 import javafx.scene.text.Font;
 
 /**
@@ -387,7 +389,12 @@ public class DrawPane extends BorderPane {
         if (Double.isNaN(x) || Double.isNaN(y)) {
             return;
         }
-        initials.getElements().add(new MoveTo(clampX(x), clampY(y)));
+        ObservableList<PathElement> ie = initials.getElements();
+        if (!ie.isEmpty() && ie.get(ie.size() - 1) instanceof MoveTo) {
+            ie.remove(ie.size() - 1);
+            System.err.println("Removing MoveTo without following LineTo");
+        }
+        ie.add(new MoveTo(clampX(x), clampY(y)));
     }
     
     private void continueDrawingInitials(InputEvent e) {
@@ -395,7 +402,26 @@ public class DrawPane extends BorderPane {
         if (Double.isNaN(x) || Double.isNaN(y)) {
             return;
         }
-        initials.getElements().add(new LineTo(clampX(x), clampY(y)));
+        ObservableList<PathElement> ie = initials.getElements();
+        if (ie.isEmpty()) {
+            System.err.println("Skipping adding LineTo to empty initials");
+            return;
+        }
+        LineTo lineTo = new LineTo(clampX(x), clampY(y));
+        PathElement prevElement = ie.get(ie.size() - 1);
+        if (!lineToEquals(lineTo, prevElement)) {
+            ie.add(lineTo);
+        } else {
+            System.err.println("Skipping duplicated LineTo");
+        }
+    }
+    
+    private final static boolean lineToEquals(LineTo lineTo, Object obj) {
+        if (!(obj instanceof LineTo)) {
+            return false;
+        }
+        LineTo aLineTo = (LineTo) obj;
+        return lineTo.getX() == aLineTo.getX() && lineTo.getY() == aLineTo.getY();
     }
     
     public static enum ImportSource { MODEL, WEBAPP };
