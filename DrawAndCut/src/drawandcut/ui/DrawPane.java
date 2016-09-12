@@ -80,9 +80,7 @@ public class DrawPane extends BorderPane {
         return textPane;
     }
 
-    private static enum DrawStep {DrawShape, PositionHole, DrawInitials, ReadyToCut}
-
-    ;
+    private enum DrawStep {DrawShape, PositionHole, DrawInitials, ReadyToCut}
 
     //    private static final Color CUT_COLOR = BACKGROUND_COLOR;
     private static final Color CUT_COLOR = Color.BLACK;
