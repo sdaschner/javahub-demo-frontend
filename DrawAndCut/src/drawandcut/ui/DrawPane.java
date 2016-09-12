@@ -216,12 +216,20 @@ public class DrawPane extends BorderPane {
                 break;
             case DrawInitials:
                 if (!undoInitials()) {
-                    positionHole();
+                    if (NO_HOLE) {
+                        drawShape();
+                    } else {
+                        positionHole();
+                    }
                     initials.getElements().clear();
                 }
                 break;
             case ReadyToCut:
-                drawInitials();
+                if (NO_HOLE) {
+                    drawShape();
+                } else {
+                    drawInitials();
+                }
                 break;
             default:
                 throw new IllegalStateException("Cannot proceed to the next drawing stage from this: " + drawStep.get());
@@ -263,6 +271,10 @@ public class DrawPane extends BorderPane {
     }
     
     public void positionHole() {
+        if (NO_HOLE) {
+            readyToCut();
+            return;
+        }
         drawStep.set(DrawStep.PositionHole);
         canvas.setOnMousePressed(e -> positionHole(e));
         canvas.setOnMouseDragged(e -> positionHole(e));
@@ -274,6 +286,10 @@ public class DrawPane extends BorderPane {
     }
     
     private void drawInitials() {
+        if (NO_HOLE) {
+            readyToCut();
+            return;
+        }
         drawStep.set(DrawStep.DrawInitials);
         stackPane.getChildren().remove(initials);
         stackPane.getChildren().add(stackPane.getChildren().indexOf(outline.get()), initials);
@@ -345,7 +361,11 @@ public class DrawPane extends BorderPane {
         }
         try {
             drawing.get().stop(x, y);
-            positionHole();
+            if (NO_HOLE) {
+                readyToCut();
+            } else {
+                positionHole();
+            }
         } catch (IllegalArgumentException iae) {
             showErrorMessage(iae);
         }

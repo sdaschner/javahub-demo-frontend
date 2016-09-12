@@ -90,8 +90,10 @@ public class PathConverter {
     }
     
     private void processInitials() {
-        double initialsZ = MATERIAL_BASE_Z + MATERIAL_SIZE_Z - INITIALS_DOC;
-        processPathInXY(initials, initialsZ);
+        if (initials != null) {
+            double initialsZ = gcg.getTopZ() - INITIALS_DOC;
+            processPathInXY(initials, initialsZ);
+        }
     }
     
     private void processPath() {

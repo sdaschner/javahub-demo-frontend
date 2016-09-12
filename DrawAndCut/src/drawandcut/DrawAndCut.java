@@ -120,9 +120,11 @@ public class DrawAndCut extends Application {
                 controlPane.scanButton());
         
         controlPane.loadButton().setOnAction(t -> showLoadPane());
-        controlPane.cutButton().disableProperty().bind(
-                drawPane.outlineProperty().isNull()
-                        .or(drawPane.holeProperty().isNull())
+        controlPane.cutButton().disableProperty()
+                .bind(drawPane.outlineProperty().isNull()
+                        .or(NO_HOLE 
+                                ? Bindings.createBooleanBinding(() -> false) 
+                                : drawPane.holeProperty().isNull())
                         .or(borderPane.centerProperty().isEqualTo(scannerPane))
                         .or(DISABLE_CUTTER 
                                 ? Bindings.createBooleanBinding(() -> false) 
