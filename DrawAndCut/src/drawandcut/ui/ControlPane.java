@@ -23,22 +23,24 @@
  */
 package drawandcut.ui;
 
-import static drawandcut.Configuration.*;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.GridPane;
 
+import static drawandcut.Configuration.*;
+
 /**
- *
  * @author akouznet
  */
 public class ControlPane extends GridPane {
-
-
     private final ToggleButton scan = new ToggleButton("Scan");
     private final ToggleButton draw = new ToggleButton("Draw");
+    private final TextField initials = new TextField();
+
     private final Button cut = new Button("Cut");
     private final ToggleButton load = new ToggleButton("Load");
     private final Button exit = new Button("Exit");
@@ -48,24 +50,32 @@ public class ControlPane extends GridPane {
         scan.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
         draw.setId("draw");
         draw.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
+
         load.setId("load");
         load.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
         cut.setId("cut");
         cut.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
         exit.setId("exit");
         exit.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
-        
+
         setId("controlPane");
         setPadding(new Insets(PADDING));
         setVgap(PADDING);
         setAlignment(Pos.CENTER);
         addRow(0, scan);
         addRow(1, draw);
-        addRow(2, load);
-        addRow(3, cut);
+
+        GridPane initialPane = new GridPane();
+        initialPane.addRow(0, initials);
+        initialPane.addRow(1, new Label("Text"));
+        initialPane.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
+
+        addRow(2, initialPane);
+        addRow(3, load);
+        addRow(4, cut);
 //        addRow(4, exit);
     }
-    
+
     public Button cutButton() {
         return cut;
     }
@@ -73,17 +83,20 @@ public class ControlPane extends GridPane {
     public ToggleButton loadButton() {
         return load;
     }
-    
+
     public ToggleButton scanButton() {
         return scan;
     }
-    
+
     public ToggleButton drawButton() {
         return draw;
     }
-    
+
     public Button exitButton() {
         return exit;
     }
-    
+
+    public TextField initialsField() {
+        return initials;
+    }
 }
