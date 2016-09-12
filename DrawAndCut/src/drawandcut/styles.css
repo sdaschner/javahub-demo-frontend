@@ -52,3 +52,29 @@
 #cut:disabled {
     -fx-border-width: 0;
 }
+
+#nextButton,
+#prevButton {
+    -fx-content-display: graphic-only;
+    -fx-background-color: white;
+    -fx-pref-width: 20;
+    -fx-pref-height: 20;
+    -fx-min-width: 20;
+    -fx-min-height: 20;
+    -fx-max-width: 20;
+    -fx-max-height: 20;
+}
+#nextButton:hover,
+#prevButton:hover {
+    -fx-background-color: #D5E6ED;
+}
+#nextButton:armed,
+#prevButton:armed {
+    -fx-background-color: #7999AC;
+}
+#nextButton {
+    -fx-shape: "M8 16c4.4 0 8-3.6 8-8s-3.6-8-8-8-8 3.6-8 8 3.6 8 8 8zM9.6 7l-1.8-1.8 1.4-1.4 4.2 4.2-4.2 4.2-1.4-1.4 1.8-1.8h-6.6v-2h6.6z";
+}
+#prevButton {
+    -fx-shape: "M8 0c-4.4 0-8 3.6-8 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zM6.4 9l1.8 1.8-1.4 1.4-4.2-4.2 4.2-4.2 1.4 1.4-1.8 1.8h6.6v2h-6.6z";    
+}

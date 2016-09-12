@@ -52,6 +52,7 @@ public class Configuration {
     public static final double FEED = Double.parseDouble(System.getProperty("feed", Double.toString(44 * IN))); // mmpm
     public static final double PLUNGE_FEED = 14 * IN; // mmpm
     public static final double RECOMMENDED_DOC = 0.019 * IN; // 0.4826 mm <-- recommended DOC
+    public static final double INITIALS_DOC = RECOMMENDED_DOC / 2; // mm
     public static final int NUMBER_OF_PASSES = Integer.parseInt(System.getProperty("numberOfPasses", "7"));
     public static final double DOC = MATERIAL_SIZE_Z / NUMBER_OF_PASSES; // mm
     public static final double Z_ACCURACY = 0.01; // mm

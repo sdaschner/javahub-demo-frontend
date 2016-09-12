@@ -44,6 +44,7 @@ public class PathConverter {
     
     private final GCodeGenerator gcg = new GCodeGenerator();
     private Path path;
+    private Path initials;
     private final Point2D hole;
     private final double feed;
     private final double plungeFeed;
@@ -51,14 +52,16 @@ public class PathConverter {
     private double startX;
     private double startY;
 
-    public PathConverter(Path path, Point2D hole, int rpm, double feed, double doc, double plungeFeed) {
+    public PathConverter(Path path, Point2D hole, Path initials, int rpm, double feed, double doc, double plungeFeed) {
         this.feed = feed;
         this.path = path;
         this.hole = hole;
         this.plungeFeed = plungeFeed;
         this.doc = doc;
+        this.initials = initials;
         gcg.init(rpm);
         processHole();
+        processInitials();
         processPath();
         gcg.spindleStop();
         gcg.goHome();
@@ -86,6 +89,11 @@ public class PathConverter {
         }
     }
     
+    private void processInitials() {
+        double initialsZ = MATERIAL_BASE_Z + MATERIAL_SIZE_Z - INITIALS_DOC;
+        processPathInXY(initials, initialsZ);
+    }
+    
     private void processPath() {
         int zSteps = (int) Math.ceil(MATERIAL_SIZE_Z / doc);
 //        System.out.println("zSteps = " + zSteps);
@@ -99,13 +107,13 @@ public class PathConverter {
             assert Math.abs(newZ - oldZ) < doc + Z_ACCURACY;
             assert newZ <= gcg.getTopZ() + Z_ACCURACY;
             assert newZ >= gcg.getBottomZ() - Z_ACCURACY;
-            processPathInXY(newZ);
+            processPathInXY(path, newZ);
             oldZ = newZ;
         }
         gcg.rapidZ(gcg.getSafeZ());        
     }
     
-    private void processPathInXY(double targetZ) {
+    private void processPathInXY(Path path, double targetZ) {
 //        Bounds boundsInLocal = path.getBoundsInLocal();
 //        System.out.println("path.getBoundsInLocal() = " + boundsInLocal);
         startX = Double.NaN;

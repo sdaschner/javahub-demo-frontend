@@ -131,6 +131,7 @@ public class DrawAndCut extends Application {
             List<String> output = new PathConverter(
                     drawPane.outlineProperty().get(), 
                     drawPane.holeProperty().get(), 
+                    drawPane.getInitials(),
                     RPM, FEED, DOC, PLUNGE_FEED).getOutput();
 //            System.out.println("Program:");
 //            for(String line : output) {

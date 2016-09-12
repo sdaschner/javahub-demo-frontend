@@ -54,14 +54,17 @@ import javafx.scene.shape.Shape;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
 import drawandcut.path.OutlinerEsri;
+import java.util.stream.Collectors;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 
@@ -71,11 +74,14 @@ import javafx.scene.text.Font;
  */
 public class DrawPane extends BorderPane {
     
+    private static enum DrawStep { DrawShape, PositionHole, DrawInitials, ReadyToCut };
+    
 //    private static final Color CUT_COLOR = BACKGROUND_COLOR;
     private static final Color CUT_COLOR = Color.BLACK;
     private final Pane canvas = new Pane();
     private final Path pathThin = new Path();
     private final Path pathThick = new Path();
+    private final Path initials = new Path();
     private ObjectProperty<Drawing> drawing = new SimpleObjectProperty<>();
     private final DoubleProperty pxPerMm = new SimpleDoubleProperty(1);
     private final StackPane stackPane;
@@ -88,6 +94,9 @@ public class DrawPane extends BorderPane {
     private final Circle holeSafeZone;
     private final Outliner outliner = new OutlinerEsri();
     private double margin;
+    private final Button nextButton = new Button();
+    private final Button prevButton = new Button();
+    private final ObjectProperty<DrawStep> drawStep = new SimpleObjectProperty<>(DrawStep.DrawShape);
 //    private final Outliner outliner = new OutlinerJava2D();
 
 
@@ -118,6 +127,15 @@ public class DrawPane extends BorderPane {
         pathThick.layoutYProperty().bind(canvas.layoutYProperty());
         stackPane.getChildren().add(pathThick);
         
+        initials.setStrokeLineCap(StrokeLineCap.ROUND);
+        initials.setStrokeLineJoin(StrokeLineJoin.ROUND);
+        initials.setStroke(Color.web("7999AC"));
+        initials.setManaged(false);
+        initials.setMouseTransparent(true);
+        initials.layoutXProperty().bind(canvas.layoutXProperty());
+        initials.layoutYProperty().bind(canvas.layoutYProperty());
+        stackPane.getChildren().add(initials);
+        
         pathThin.setStrokeLineCap(StrokeLineCap.ROUND);
         pathThin.setStrokeLineJoin(StrokeLineJoin.ROUND);
         pathThin.setStroke(Color.web("FF8080"));
@@ -131,6 +149,7 @@ public class DrawPane extends BorderPane {
             pxPerMm.set(canvas.getWidth() / MATERIAL_SIZE_X);
             pathThin.setStrokeWidth(MOTIF_WIDTH_MM * pxPerMm.get());
             pathThick.setStrokeWidth((MOTIF_WIDTH_MM + 2 * TOOL_DIAMETER) * pxPerMm.get());
+            initials.setStrokeWidth(TOOL_DIAMETER * pxPerMm.get());
             margin = MOTIF_WIDTH_MM * pxPerMm.get() / 2;
         });
         
@@ -139,8 +158,22 @@ public class DrawPane extends BorderPane {
         title.setFont(Font.font(25));
         BorderPane.setAlignment(title, Pos.CENTER);
         
+        nextButton.setId("nextButton");
+        nextButton.disableProperty()
+                .bind(drawStep.isEqualTo(DrawStep.DrawShape)
+                .or(drawStep.isEqualTo(DrawStep.ReadyToCut))
+                .or(drawStep.isEqualTo(DrawStep.PositionHole).and(hole.isNull())));
+        nextButton.setOnAction(t -> next());
+        prevButton.setId("prevButton");
+        prevButton.disableProperty()
+                .bind(drawStep.isEqualTo(DrawStep.DrawShape));
+        prevButton.setOnAction(t -> prev());
+        HBox topHBox = new HBox(prevButton, title, nextButton);
+        topHBox.setSpacing(20);
+        topHBox.setAlignment(Pos.CENTER);
+        
         setCenter(stackPane);
-        setTop(title);
+        setTop(topHBox);
         
         drawShape();
         
@@ -156,6 +189,7 @@ public class DrawPane extends BorderPane {
         holeSafeZone.radiusProperty().bind(pxPerMm.multiply((HOLE_DISTANCE_FROM_EDGE + HOLE_DIAMETER) / 2));
         holeSafeZone.setStroke(Color.web("#7999AC"));
         holeSafeZone.setFill(Color.TRANSPARENT);
+        holeSafeZone.visibleProperty().bind(drawStep.isEqualTo(DrawStep.PositionHole));
         holeSafeZone.setManaged(false);
         holeSafeZone.setMouseTransparent(true);
         holeSafeZone.layoutXProperty().bind(canvas.layoutXProperty());
@@ -174,7 +208,51 @@ public class DrawPane extends BorderPane {
         
     }
     
+    public final void prev() {
+        switch (drawStep.get()) {
+            case PositionHole:
+                drawShape();
+                hole.set(null);
+                break;
+            case DrawInitials:
+                if (!undoInitials()) {
+                    positionHole();
+                    initials.getElements().clear();
+                }
+                break;
+            case ReadyToCut:
+                drawInitials();
+                break;
+            default:
+                throw new IllegalStateException("Cannot proceed to the next drawing stage from this: " + drawStep.get());
+        }
+    }
+    
+    public final boolean undoInitials() {
+        for (int i = initials.getElements().size() - 1; i >= 0; i--) {
+            if (initials.getElements().get(i) instanceof MoveTo) {
+                initials.getElements().subList(i, initials.getElements().size()).clear();
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    public final void next() {
+        switch (drawStep.get()) {
+            case PositionHole:
+                drawInitials();
+                break;
+            case DrawInitials:
+                readyToCut();
+                break;
+            default:
+                throw new IllegalStateException("Cannot proceed to the next drawing stage from this: " + drawStep.get());
+        }
+    }
+    
     public final void drawShape() {
+        drawStep.set(DrawStep.DrawShape);
         canvas.setOnMousePressed(e -> startDrawing(e));
         canvas.setOnMouseDragged(e -> continueDrawing(e));
         canvas.setOnMouseReleased(e -> stopDrawing(e));
@@ -185,6 +263,7 @@ public class DrawPane extends BorderPane {
     }
     
     public void positionHole() {
+        drawStep.set(DrawStep.PositionHole);
         canvas.setOnMousePressed(e -> positionHole(e));
         canvas.setOnMouseDragged(e -> positionHole(e));
         canvas.setOnMouseReleased(null);
@@ -194,7 +273,21 @@ public class DrawPane extends BorderPane {
         title.setText("Position badge holder hole");
     }
     
+    private void drawInitials() {
+        drawStep.set(DrawStep.DrawInitials);
+        stackPane.getChildren().remove(initials);
+        stackPane.getChildren().add(stackPane.getChildren().indexOf(outline.get()), initials);
+        canvas.setOnMousePressed(e -> startDrawingInitials(e));
+        canvas.setOnMouseDragged(e -> continueDrawingInitials(e));
+        canvas.setOnMouseReleased(e -> continueDrawingInitials(e));
+        canvas.setOnTouchPressed(e -> startDrawingInitials(e));
+        canvas.setOnTouchMoved(e -> continueDrawingInitials(e));
+        canvas.setOnTouchReleased(e -> continueDrawingInitials(e));
+        title.setText("Draw your initials");
+    }
+    
     public void readyToCut() {
+        drawStep.set(DrawStep.ReadyToCut);
         title.setText("Ready to cut");
     }
     
@@ -267,7 +360,22 @@ public class DrawPane extends BorderPane {
             return;
         }
         drawing.get().positionHole(x, y);
-        readyToCut();
+    }
+    
+    private void startDrawingInitials(InputEvent e) {
+        double x = getX(e), y = getY(e);
+        if (Double.isNaN(x) || Double.isNaN(y)) {
+            return;
+        }
+        initials.getElements().add(new MoveTo(clampX(x), clampY(y)));
+    }
+    
+    private void continueDrawingInitials(InputEvent e) {
+        double x = getX(e), y = getY(e);
+        if (Double.isNaN(x) || Double.isNaN(y)) {
+            return;
+        }
+        initials.getElements().add(new LineTo(clampX(x), clampY(y)));
     }
     
     public void importSVG(String svg, double size) {
@@ -358,6 +466,7 @@ public class DrawPane extends BorderPane {
         hole.set(null);
         pathThin.getElements().clear();
         pathThick.getElements().clear();
+        initials.getElements().clear();
         title.setTextFill(Color.WHITE);
         title.setText("Draw shape");
     }
@@ -406,22 +515,6 @@ public class DrawPane extends BorderPane {
             }
         }
         
-        private double clampX(double x) {
-            return Math.max(margin, Math.min(x, canvas.getWidth() - margin));
-        }
-        
-        private double clampY(double y) {
-            return Math.max(margin, Math.min(y, canvas.getHeight() - margin));
-        }
-        
-        private double convertX(double x) {
-            return x / pxPerMm.get();
-        }
-        
-        private double convertY(double y) {
-            return Configuration.MATERIAL_SIZE_Y - y / pxPerMm.get();
-        }
-
         public Path getPath() {
             return new Path(p.getElements());
         }
@@ -447,6 +540,22 @@ public class DrawPane extends BorderPane {
         }
     }
     
+    private double clampX(double x) {
+        return Math.max(margin, Math.min(x, canvas.getWidth() - margin));
+    }
+
+    private double clampY(double y) {
+        return Math.max(margin, Math.min(y, canvas.getHeight() - margin));
+    }
+
+    private double convertX(double x) {
+        return x / pxPerMm.get();
+    }
+
+    private double convertY(double y) {
+        return Configuration.MATERIAL_SIZE_Y - y / pxPerMm.get();
+    }
+
     private void showErrorMessage(Exception ex) {
         errorMessage.setText(ex.getMessage());
         errorMessage.resize(canvas.getWidth(), canvas.getHeight());
@@ -461,4 +570,17 @@ public class DrawPane extends BorderPane {
         return outline;
     }
     
+    public Path getInitials() {
+        return new Path(initials.getElements().stream().map(pathElement -> {
+            if (pathElement instanceof MoveTo) {
+                MoveTo mt = (MoveTo) pathElement;
+                return new MoveTo(convertX(mt.getX()), convertY(mt.getY()));
+            } else if (pathElement instanceof LineTo) {
+                LineTo mt = (LineTo) pathElement;
+                return new LineTo(convertX(mt.getX()), convertY(mt.getY()));
+            } else {
+                throw new IllegalStateException("Unexpected path element: " + pathElement);
+            }
+        }).collect(Collectors.toList()));
+    }
 }
