@@ -63,7 +63,7 @@ public class ControlPane extends GridPane {
         addRow(1, draw);
         addRow(2, load);
         addRow(3, cut);
-        addRow(4, exit);
+//        addRow(4, exit);
     }
     
     public Button cutButton() {
