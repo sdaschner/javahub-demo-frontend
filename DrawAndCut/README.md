@@ -1,11 +1,7 @@
 
 Please read before you run it:
 
-It uses openjdk credentials but may also work without them. Please try and let me know if you can clone it.
-
-When the app starts, it tries to connect to Cutter on COM4 by default (you can override this using -DportName=/dev/ttyACM0 property). If connection is successful it does homing and the probing.
-
-Unfortunately, probing isn't stable. It should slow down half way to the probe (probe is on the right side in my cutter). If it doesn't - then something isn't right and you better turn off the cutter. It could also stop before touching the probe. Restart the app in that case too.
+When the app starts, it tries to connect to Cutter on COM4 by default (you can override this using -DportName=/dev/ttyACM0 property). If connection is successful it does homing and then probing.
 
 If everything's fine, it will return to initial (-5, -5, -5) position and reset work coordinate system so that 0 is on the top of the wasteboard (or the bottom of the material). I've got an empirical constant in Configuration.PROBING_OFFSET (-DprobingOffset=0.81 in mm). It will likely be different for you machine, so you need to measure it. This is an important thing as it affects the DOC precision.
 
@@ -25,8 +21,6 @@ If everything's fine, it will return to initial (-5, -5, -5) position and reset 
 
 You may also want to specify the size of the plastic you have. I've -DmaterialSizeX and -DmaterialSizeY double properties you can use to specify the size of the piece in mm. (X is left to right and Y is from you towards inside the cutter). 0 is roughly set to the left nearest corner of the wasteboard slightly shifted to the inside. So when you insert material, it should be aligned in that corner.
 
-If the startup was successful, you can draw something on the screen. You can do several attempts, it resets automatically. Once you finished drawing, it will convert it into two tool paths and show them. Feel free to draw again :-) If there are no paths shown - then the shape is not correct. Draw again!
+Cutting uses 7 passes approach. You can play with parameters on the command line: -DnumberOfPasses=7 -Drpm=9000 -Dfeed=1118 (feed in mm) or in Configuration.java file.
 
-Press Print to start printing! Good luck on this step :-)
-
-It will print the thing using 7 passes approach. You can play with parameters on the command line: -DnumberOfPasses=7 -Drpm=9000 -Dfeed=1118 (feed in mm) or in Configuration.java file.
+There are many other configuration parameters. See Configuration.java file.
