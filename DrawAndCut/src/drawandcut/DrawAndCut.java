@@ -167,13 +167,15 @@ public class DrawAndCut extends Application {
             }
         });
         controlPane.drawButton().setOnAction(t -> {
+            if (borderPane.getCenter() == drawPane) {
+                drawPane.drawShape();
+            }
             showDrawPane();
-            drawPane.drawShape();
             controlPane.drawButton().setSelected(true);
         });
         controlPane.drawButton().setSelected(true);
         
-        scannerPane.setOnRead(url -> {            
+        scannerPane.setOnRead(url -> {
             drawPane.importSVG(readUrlToString(url), MATERIAL_SIZE_X, DrawPane.ImportSource.WEBAPP);
             showDrawPane();
         });
