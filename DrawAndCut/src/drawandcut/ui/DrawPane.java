@@ -398,7 +398,9 @@ public class DrawPane extends BorderPane {
         initials.getElements().add(new LineTo(clampX(x), clampY(y)));
     }
     
-    public void importSVG(String svg, double size) {
+    public static enum ImportSource { MODEL, WEBAPP };
+    
+    public void importSVG(String svg, double size, ImportSource importSource) {
         SVGPath svgPath = new SVGPath();
         svgPath.setContent(svg);
         svgPath.setFillRule(FillRule.EVEN_ODD);
@@ -414,8 +416,8 @@ public class DrawPane extends BorderPane {
                             -b.getMinY() * -scale + (MATERIAL_SIZE_Y - b.getHeight() * -scale) / 2), 
                     new Scale(scale, -scale));
         }
-        System.out.println("before svgPath.getBoundsInLocal() = " + svgPath.getBoundsInLocal());
-        System.out.println("after svgPath.getBoundsInParent() = " + svgPath.getBoundsInParent());
+//        System.out.println("before svgPath.getBoundsInLocal() = " + svgPath.getBoundsInLocal());
+//        System.out.println("after svgPath.getBoundsInParent() = " + svgPath.getBoundsInParent());
         
         drawing.set(new Drawing(0, 0)); // TODO: Fix this workaround to indicate there is a drawing
         reset();
@@ -423,10 +425,20 @@ public class DrawPane extends BorderPane {
         printPathCount(path, "path");
         Path simplifiedPath = simplify(path);    
         printPathCount(simplifiedPath, "simplifiedPath");
-        Path outlinedPath = outliner.generateFilledOutline(simplifiedPath);
-        printPathCount(outlinedPath, "outlinedPath");
-        Path outlinePath = simplify(outlinedPath);
-        printPathCount(outlinePath, "outline");
+        Path outlinePath;
+        switch (importSource) {
+            case MODEL:
+                Path outlinedPath = outliner.generateFilledOutline(simplifiedPath);
+                printPathCount(outlinedPath, "outlinedPath");
+                outlinePath = simplify(outlinedPath);
+                printPathCount(outlinePath, "outline");
+                break;
+            case WEBAPP:
+                outlinePath = simplifiedPath;
+                break;
+            default:
+                throw new IllegalStateException("Unexpected import source: " + importSource);
+        }
         outlinePath.setStrokeWidth(Configuration.TOOL_DIAMETER);
         outlinePath.setStroke(CUT_COLOR);
         outlinePath.setStrokeLineJoin(StrokeLineJoin.ROUND);
@@ -440,7 +452,6 @@ public class DrawPane extends BorderPane {
         outlinePath.layoutYProperty().bind(canvas.layoutYProperty());
         System.out.println("before outline.getBoundsInLocal() = " + outlinePath.getBoundsInLocal());
         System.out.println("after outline.getBoundsInParent() = " + outlinePath.getBoundsInParent());
-        stackPane.getChildren().add(outlinePath);
         outline.set(outlinePath);
 
         g = new Group(svgPath);
@@ -453,7 +464,7 @@ public class DrawPane extends BorderPane {
         g.getTransforms().addAll(
                 new Translate(0, -Configuration.MATERIAL_SIZE_Y), 
                 new Scale(pxPerMm.get(), -pxPerMm.get(), 0, MATERIAL_SIZE_Y));
-        stackPane.getChildren().add(g);
+        stackPane.getChildren().addAll(g, outlinePath);
         
         positionHole();
     }

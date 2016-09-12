@@ -24,7 +24,6 @@
 package drawandcut;
 
 import static drawandcut.Configuration.*;
-import drawandcut.Shapes.Shape;
 import drawandcut.cutter.Cutter;
 import drawandcut.cutter.CutterConnection;
 import drawandcut.gcode.PathConverter;
@@ -42,6 +41,10 @@ import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import drawandcut.ui.ScannerPane;
 import drawandcut.ui.ShapesPane;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Scanner;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.scene.control.ToggleGroup;
@@ -106,7 +109,7 @@ public class DrawAndCut extends Application {
         shapesPane = new ShapesPane(shapes);
         shapesPane.setOnAction(key -> {
             Shapes.Shape shape = shapes.get().get(key);
-            drawPane.importSVG(shape.getSvg(), shape.getSize());
+            drawPane.importSVG(shape.getSvg(), shape.getSize(), DrawPane.ImportSource.MODEL);
             showDrawPane();
         });
         
@@ -170,11 +173,8 @@ public class DrawAndCut extends Application {
         });
         controlPane.drawButton().setSelected(true);
         
-        scannerPane.setOnRead(code -> {
-            Shape shape = shapes.get().get(code);
-            if (shape != null) {
-                drawPane.importSVG(shape.getSvg(), shape.getSize());
-            }
+        scannerPane.setOnRead(url -> {            
+            drawPane.importSVG(readUrlToString(url), MATERIAL_SIZE_X, DrawPane.ImportSource.WEBAPP);
             showDrawPane();
         });
 
@@ -187,6 +187,24 @@ public class DrawAndCut extends Application {
 //        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(0, 50), new ClosePath());
 //        Outliner outliner = new Outliner(path);
 //        Path outline = outliner.generateOutline();
+    }
+    
+    private static String readUrlToString(String url) {
+        try (
+            InputStream inputStream = new URL(url).openStream();
+            Scanner scanner = new Scanner(inputStream, "UTF-8").useDelimiter("\\A")
+        ) {
+            if (scanner.hasNext()) {
+                return scanner.next();
+            }
+        } catch (MalformedURLException ex) {
+            Logger.getLogger(DrawAndCut.class.getName())
+                    .log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(DrawAndCut.class.getName())
+                    .log(Level.SEVERE, null, ex);
+        }
+        return null;
     }
     
     private void showDrawPane() {

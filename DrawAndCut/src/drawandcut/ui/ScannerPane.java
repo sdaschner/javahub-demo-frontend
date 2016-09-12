@@ -61,7 +61,7 @@ public class ScannerPane extends BorderPane {
             scan.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
             scan.setOnAction(t -> {
                 if (onRead != null) {
-                    onRead.accept("bird");
+                    onRead.accept("http://javahub-demo-javahub-demo-backend.44fs.preview.openshiftapps.com/javahub-cutter-backend/modules/drawings/9d725893-a4df-461a-bc4d-972480290a81");
                 }
             });
             preview = scan;
