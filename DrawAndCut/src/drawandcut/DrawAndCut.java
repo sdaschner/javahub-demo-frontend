@@ -52,6 +52,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static drawandcut.Configuration.*;
+import javafx.scene.shape.Path;
 
 /**
  * @author akouznet

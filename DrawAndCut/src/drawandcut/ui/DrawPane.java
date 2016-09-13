@@ -69,6 +69,8 @@ import javafx.scene.transform.Translate;
 import java.util.stream.Collectors;
 
 import static drawandcut.Configuration.*;
+import java.util.stream.Stream;
+import javafx.scene.transform.Transform;
 
 /**
  * @author akouznet
@@ -126,7 +128,8 @@ public class DrawPane extends BorderPane {
 
         stackPane.getChildren().add(canvas);
 
-        textPane = new TextPane(5.0); // need to figure out proper width of line
+        textPane = new TextPane(5.0);
+        textPane.setMouseTransparent(true);
         stackPane.getChildren().add(textPane);
 
 
@@ -163,6 +166,7 @@ public class DrawPane extends BorderPane {
             pathThin.setStrokeWidth(MOTIF_WIDTH_MM * pxPerMm.get());
             pathThick.setStrokeWidth((MOTIF_WIDTH_MM + 2 * TOOL_DIAMETER) * pxPerMm.get());
             initials.setStrokeWidth(TOOL_DIAMETER * pxPerMm.get());
+            textPane.setLineWidth(TOOL_DIAMETER * pxPerMm.get());
             margin = MOTIF_WIDTH_MM * pxPerMm.get() / 2;
         });
 
@@ -617,7 +621,11 @@ public class DrawPane extends BorderPane {
     }
 
     public Path getInitials() {
-        return new Path(initials.getElements().stream().map(pathElement -> {
+        Path textInitials = textPane.getAll();
+        Bounds b = textInitials.getBoundsInLocal();
+        double dx = b.getMinX() + b.getWidth() / 2 - canvas.getWidth() / 2;
+        double dy = b.getMinY() + b.getHeight()/ 2 - canvas.getHeight() / 2;
+        return new Path(Stream.concat(initials.getElements().stream().map(pathElement -> {
             if (pathElement instanceof MoveTo) {
                 MoveTo mt = (MoveTo) pathElement;
                 return new MoveTo(convertX(mt.getX()), convertY(mt.getY()));
@@ -627,6 +635,18 @@ public class DrawPane extends BorderPane {
             } else {
                 throw new IllegalStateException("Unexpected path element: " + pathElement);
             }
-        }).collect(Collectors.toList()));
+        }), textInitials.getElements().stream().map(pathElement -> {
+            if (pathElement instanceof MoveTo) {
+                MoveTo mt = (MoveTo) pathElement;
+                return new MoveTo(convertX(mt.getX() - dx), convertY(mt.getY() - dy));
+            } else if (pathElement instanceof LineTo) {
+                LineTo mt = (LineTo) pathElement;
+                return new LineTo(convertX(mt.getX() - dx), convertY(mt.getY() - dy));
+            } else if (pathElement instanceof ClosePath) {
+                return pathElement;
+            } else {
+                throw new IllegalStateException("Unexpected path element: " + pathElement);
+            }
+        })).collect(Collectors.toList()));
     }
 }

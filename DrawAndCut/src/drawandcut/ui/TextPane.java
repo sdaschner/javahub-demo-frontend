@@ -44,12 +44,16 @@ public class TextPane extends BorderPane {
         this.fontFace = Configuration.FONT_FACE;
         this.fontSize = Configuration.FONT_SIZE;
 
-        all.setStrokeWidth(lineWidth);
+        setLineWidth(lineWidth);
         all.setStroke(Color.GRAY);
         all.setStrokeLineCap(StrokeLineCap.ROUND);
         all.setStrokeLineJoin(StrokeLineJoin.ROUND);
 
         setCenter(all);
+    }
+    
+    public void setLineWidth(double lineWidth) {
+        all.setStrokeWidth(lineWidth);
     }
 
     public void setText(String text) {
@@ -66,5 +70,9 @@ public class TextPane extends BorderPane {
 
     public void setFontLineWidth(double fontLineWidth) {
         all.setStrokeWidth(fontLineWidth);
+    }
+
+    public Path getAll() {
+        return all;
     }
 }
