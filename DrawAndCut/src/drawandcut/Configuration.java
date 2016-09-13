@@ -81,6 +81,8 @@ public class Configuration {
     public static final String CLOUD_BASE_URL = System.getProperty("cloudBaseUrl",
             "http://javahub-demo-javahub-demo-backend.44fs.preview.openshiftapps.com/javahub-cutter-backend/modules/drawings/");
     
+    public static final boolean ENABLE_EVENER = Boolean.getBoolean("enableEvener");
+    
     static {
         System.out.println("Configuration summary:");
         System.out.println("DISABLE_CUTTER = " + DISABLE_CUTTER);

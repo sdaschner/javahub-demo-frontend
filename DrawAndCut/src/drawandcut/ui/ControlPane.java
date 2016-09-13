@@ -42,6 +42,7 @@ public class ControlPane extends GridPane {
     private final Button cut = new Button("Cut");
     private final ToggleButton load = new ToggleButton("Load");
     private final Button exit = new Button("Exit");
+    private final Button even = new Button("Make surface even");
 
     public ControlPane() {
         scan.setId("scan");
@@ -54,7 +55,9 @@ public class ControlPane extends GridPane {
         cut.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
         exit.setId("exit");
         exit.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
-        
+        even.setId("even");
+        even.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
+
         setId("controlPane");
         setPadding(new Insets(PADDING));
         setVgap(PADDING);
@@ -63,7 +66,11 @@ public class ControlPane extends GridPane {
         addRow(1, draw);
         addRow(2, load);
         addRow(3, cut);
-//        addRow(4, exit);
+
+        if (ENABLE_EVENER) {
+            addRow(4, even);
+        }
+//        addRow(5, exit);
     }
     
     public Button cutButton() {
@@ -85,5 +92,8 @@ public class ControlPane extends GridPane {
     public Button exitButton() {
         return exit;
     }
-    
+
+    public Button evenButton() {
+        return even;
+    }
 }

@@ -33,8 +33,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
@@ -50,6 +48,9 @@ import javafx.geometry.Insets;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.Background;
 import javafx.scene.paint.Color;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import drawandcut.gcode.SurfaceEvener;
 
 /**
  *
@@ -155,6 +156,21 @@ public class DrawAndCut extends Application {
         });
         controlPane.exitButton().setOnAction(t -> System.exit(0));
         
+        controlPane.evenButton().setOnAction(t -> {
+            List<String> output = new SurfaceEvener(
+                    RPM, FEED, PLUNGE_FEED).getOutput();
+            try {
+                Files.write(new File("surfaceEvener.nc").toPath(), output);
+            } catch (IOException ex) {
+                Logger.getLogger(DrawAndCut.class.getName())
+                        .log(Level.SEVERE, null, ex);
+            }
+            Cutter cutter = cutterConnection.getCutter();
+            if (cutter != null) {
+                cutter.sendSequence(output.toArray(new String[output.size()]));
+            }
+        });
+
         primaryStage.setTitle("JavaOne2016 - Draw and Cut demo");
         drawScene = new Scene(borderPane, SCREEN_WIDTH, SCREEN_HEIGHT, Color.BLACK);
         
