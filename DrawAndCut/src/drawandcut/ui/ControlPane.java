@@ -30,6 +30,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 
 import static drawandcut.Configuration.*;
 
@@ -65,10 +66,9 @@ public class ControlPane extends GridPane {
         addRow(0, scan);
         addRow(1, draw);
 
-        GridPane initialPane = new GridPane();
-        initialPane.addRow(0, initials);
-        Label textLabel = new Label("         Text"); // how to do horizontal alignment here?
-        initialPane.addRow(1, textLabel);
+        VBox initialPane = new VBox();
+        initialPane.setAlignment(Pos.CENTER);
+        initialPane.getChildren().addAll(initials, new Label("Text"));
         initialPane.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
 
         addRow(2, initialPane);
