@@ -175,8 +175,8 @@ public class DrawAndCut extends Application {
         });
         controlPane.drawButton().setSelected(true);
         
-        scannerPane.setOnRead(url -> {
-            drawPane.importSVG(readUrlToString(url), MATERIAL_SIZE_X, DrawPane.ImportSource.WEBAPP);
+        scannerPane.setOnRead(uuid -> {
+            drawPane.importSVG(readUrlToString(CLOUD_BASE_URL + uuid), MATERIAL_SIZE_X, DrawPane.ImportSource.WEBAPP);
             showDrawPane();
         });
 

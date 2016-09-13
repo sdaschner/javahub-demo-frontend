@@ -78,6 +78,9 @@ public class Configuration {
     public static final double HOLE_DIAMETER = 6 / 32. * IN; // mm
     public static final double HOLE_DISTANCE_FROM_EDGE = 2.5 * CM; // mm
     
+    public static final String CLOUD_BASE_URL = System.getProperty("cloudBaseUrl",
+            "http://javahub-demo-javahub-demo-backend.44fs.preview.openshiftapps.com/javahub-cutter-backend/modules/drawings/");
+    
     static {
         System.out.println("Configuration summary:");
         System.out.println("DISABLE_CUTTER = " + DISABLE_CUTTER);
