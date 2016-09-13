@@ -39,26 +39,41 @@ public class TextPane extends BorderPane {
     private final Path all = new Path();
     private final String fontFace;
     private final int fontSize;
+    private String text;
 
-    public TextPane(double lineWidth) {
+    public TextPane() {
         this.fontFace = Configuration.FONT_FACE;
         this.fontSize = Configuration.FONT_SIZE;
 
-        setLineWidth(lineWidth);
         all.setStroke(Color.GRAY);
         all.setStrokeLineCap(StrokeLineCap.ROUND);
         all.setStrokeLineJoin(StrokeLineJoin.ROUND);
 
         setCenter(all);
     }
-    
-    public void setLineWidth(double lineWidth) {
+
+    public void setStrokeWidth(double lineWidth) {
+        if (originalFontLineWidth == 0.0) {
+            // first time we are setting the font line width.  This will be our
+            // set ratio for the program to be used in determining the future
+            // font sizes
+            fontLineScaleRatio = 1.0;
+            originalFontLineWidth = lineWidth;
+        } else {
+            fontLineScaleRatio = lineWidth / originalFontLineWidth;
+        }
         all.setStrokeWidth(lineWidth);
+        refresh();
+    }
+
+    private void refresh() {
+        setText(this.text);
     }
 
     public void setText(String text) {
+        this.text = text;
         all.getElements().clear();
-        for (LineSegment lineSegment : new Text2DHelper(text, fontFace, fontSize).getLineSegment()) {
+        for (LineSegment lineSegment : new Text2DHelper(text, fontFace, getScaledFontSize()).getLineSegment()) {
             Path path = lineSegment.getPath();
             all.getElements().addAll(path.getElements());
             for (LineSegment segment : lineSegment.getHoles()) {
@@ -68,9 +83,12 @@ public class TextPane extends BorderPane {
         }
     }
 
-    public void setFontLineWidth(double fontLineWidth) {
-        all.setStrokeWidth(fontLineWidth);
+    private double getScaledFontSize() {
+        return fontSize * fontLineScaleRatio;
     }
+
+    private double fontLineScaleRatio = 1.0;
+    private double originalFontLineWidth = 0.0;
 
     public Path getAll() {
         return all;

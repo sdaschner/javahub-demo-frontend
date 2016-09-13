@@ -70,7 +70,6 @@ import java.util.stream.Collectors;
 
 import static drawandcut.Configuration.*;
 import java.util.stream.Stream;
-import javafx.scene.transform.Transform;
 
 /**
  * @author akouznet
@@ -128,7 +127,7 @@ public class DrawPane extends BorderPane {
 
         stackPane.getChildren().add(canvas);
 
-        textPane = new TextPane(5.0);
+        textPane = new TextPane();
         textPane.setMouseTransparent(true);
         stackPane.getChildren().add(textPane);
 
@@ -166,7 +165,7 @@ public class DrawPane extends BorderPane {
             pathThin.setStrokeWidth(MOTIF_WIDTH_MM * pxPerMm.get());
             pathThick.setStrokeWidth((MOTIF_WIDTH_MM + 2 * TOOL_DIAMETER) * pxPerMm.get());
             initials.setStrokeWidth(TOOL_DIAMETER * pxPerMm.get());
-            textPane.setLineWidth(TOOL_DIAMETER * pxPerMm.get());
+            textPane.setStrokeWidth(TOOL_DIAMETER * pxPerMm.get());
             margin = MOTIF_WIDTH_MM * pxPerMm.get() / 2;
         });
 

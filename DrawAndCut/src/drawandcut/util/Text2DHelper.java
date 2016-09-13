@@ -34,7 +34,7 @@ public class Text2DHelper {
     private Point3D p0;
     private final List<LineSegment> polis = new ArrayList<>();
 
-    public Text2DHelper(String text, String font, int size) {
+    public Text2DHelper(String text, String font, double size) {
         this.text = text;
         list = new ArrayList<>();
 

@@ -67,7 +67,8 @@ public class ControlPane extends GridPane {
 
         GridPane initialPane = new GridPane();
         initialPane.addRow(0, initials);
-        initialPane.addRow(1, new Label("Text"));
+        Label textLabel = new Label("         Text"); // how to do horizontal alignment here?
+        initialPane.addRow(1, textLabel);
         initialPane.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
 
         addRow(2, initialPane);
