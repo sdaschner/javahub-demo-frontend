@@ -616,7 +616,9 @@ public class DrawPane extends BorderPane {
     private void showErrorMessage(Exception ex) {
         errorMessage.setText(ex.getMessage());
         errorMessage.resize(canvas.getWidth(), canvas.getHeight());
-        stackPane.getChildren().add(errorMessage);
+        if (!stackPane.getChildren().contains(errorMessage)) {
+            stackPane.getChildren().add(errorMessage);
+        }
     }
 
     public ObjectProperty<Point2D> holeProperty() {
