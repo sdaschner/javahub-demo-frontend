@@ -426,8 +426,6 @@ public class DrawPane extends BorderPane {
         PathElement prevElement = ie.get(ie.size() - 1);
         if (!lineToEquals(lineTo, prevElement)) {
             ie.add(lineTo);
-        } else {
-            System.err.println("Skipping duplicated LineTo");
         }
     }
     
