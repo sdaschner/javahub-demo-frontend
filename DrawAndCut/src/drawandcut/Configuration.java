@@ -50,7 +50,7 @@ public class Configuration {
     
     public static final int RPM = Integer.parseInt(System.getProperty("rpm", "9000")); // rpm
     public static final double FEED = Double.parseDouble(System.getProperty("feed", Double.toString(44 * IN))); // mmpm
-    public static final double PLUNGE_FEED = 14 * IN; // mmpm
+    public static final double PLUNGE_FEED = Double.parseDouble(System.getProperty("plungeFeed", Double.toString(10 * IN))); // mmpm
     public static final double RECOMMENDED_DOC = 0.019 * IN; // 0.4826 mm <-- recommended DOC
     public static final double INITIALS_DOC = RECOMMENDED_DOC; // mm
     public static final int NUMBER_OF_PASSES = Integer.parseInt(System.getProperty("numberOfPasses", "7"));
