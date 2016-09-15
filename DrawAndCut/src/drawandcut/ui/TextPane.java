@@ -26,6 +26,8 @@ package drawandcut.ui;
 import drawandcut.Configuration;
 import drawandcut.util.LineSegment;
 import drawandcut.util.Text2DHelper;
+import javafx.geometry.BoundingBox;
+import javafx.geometry.Bounds;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Path;
@@ -45,7 +47,7 @@ public class TextPane extends BorderPane {
         this.fontFace = Configuration.FONT_FACE;
         this.fontSize = Configuration.FONT_SIZE;
 
-        all.setStroke(Color.GRAY);
+        all.setStroke(Color.web("7999AC"));
         all.setStrokeLineCap(StrokeLineCap.ROUND);
         all.setStrokeLineJoin(StrokeLineJoin.ROUND);
 
@@ -69,11 +71,17 @@ public class TextPane extends BorderPane {
     private void refresh() {
         setText(this.text);
     }
+    
+    private Bounds materialBounds = new BoundingBox(0, 0, 200, 200);
 
+    public void setMaterialBounds(Bounds materialBounds) {
+        this.materialBounds = materialBounds;
+    }
+    
     public void setText(String text) {
         this.text = text;
         all.getElements().clear();
-        for (LineSegment lineSegment : new Text2DHelper(text, fontFace, getScaledFontSize()).getLineSegment()) {
+        for (LineSegment lineSegment : new Text2DHelper(text, fontFace, getScaledFontSize(), materialBounds.getWidth(), materialBounds.getHeight()).getLineSegment()) {
             Path path = lineSegment.getPath();
             all.getElements().addAll(path.getElements());
             for (LineSegment segment : lineSegment.getHoles()) {

@@ -61,19 +61,21 @@ import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.PathElement;
 import javafx.scene.text.Font;
 import static drawandcut.Configuration.*;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.geometry.BoundingBox;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 
 /**
  * @author akouznet
@@ -108,6 +110,7 @@ public class DrawPane extends BorderPane {
     private final StringProperty text = new SimpleStringProperty("");
     private double margin;
     private final ObjectProperty<DrawStep> drawStep = new SimpleObjectProperty<>(DrawStep.DrawShape);
+    private final TextField textField = new TextField();
 //    private final Outliner outliner = new OutlinerJava2D();
 
 
@@ -128,14 +131,45 @@ public class DrawPane extends BorderPane {
                 },
                 stackPane.widthProperty(), stackPane.heightProperty()));
 
-
-        stackPane.getChildren().add(canvas);
-
         textPane = new TextPane();
         textPane.setMouseTransparent(true);
-        stackPane.getChildren().add(textPane);
+        textPane.maxWidthProperty().bind(canvas.widthProperty());
+        textPane.minWidthProperty().bind(canvas.widthProperty());
+        
+        final int MAX_TEXT_LENGTH = 10;
+        text.addListener(t -> {
+            if (text.get().length() > MAX_TEXT_LENGTH) {
+                textField.setText(text.get().substring(0, MAX_TEXT_LENGTH));
+            }
+            textPane.setText(text.get());
+        });
 
+        textField.setTextFormatter(new TextFormatter(new UnaryOperator<TextFormatter.Change>() {
+            @Override
+            public TextFormatter.Change apply(TextFormatter.Change t) {
+                if (t.isContentChange()) {
+                    String newText = t.getControlNewText();
+                    int newLength = newText.length();
+                    if (newLength > MAX_TEXT_LENGTH) {
+                        int extraLength = newLength - MAX_TEXT_LENGTH;
+                        int caretMove = t.getCaretPosition() - t.getControlCaretPosition();
+                        int anchorMove = t.getAnchor() - t.getControlAnchor();
+                        t.setText(t.getText().substring(0, t.getText().length() - extraLength));                    
+                        t.selectRange(
+                                t.getControlAnchor() + anchorMove - extraLength, 
+                                t.getControlCaretPosition() + caretMove - extraLength);
+                    }
+                    return t;
+                } else {
+                    return null;
+                }
+            }
+        }));
+        textField.textProperty().bindBidirectional(text);
+        textField.setMaxWidth(100);
 
+        stackPane.getChildren().addAll(textField, canvas, textPane);
+        
         pathThick.setStrokeLineCap(StrokeLineCap.ROUND);
         pathThick.setStrokeLineJoin(StrokeLineJoin.ROUND);
         pathThick.setStroke(CUT_COLOR);
@@ -170,6 +204,11 @@ public class DrawPane extends BorderPane {
             pathThick.setStrokeWidth((MOTIF_WIDTH_MM + 2 * TOOL_DIAMETER) * pxPerMm.get());
             initials.setStrokeWidth(TOOL_DIAMETER * pxPerMm.get());
             textPane.setStrokeWidth(TOOL_DIAMETER * pxPerMm.get());
+            textPane.setMaterialBounds(new BoundingBox(
+                    MATERIAL_BASE_X * pxPerMm.get(),
+                    MATERIAL_BASE_Y * pxPerMm.get(),
+                    MATERIAL_SIZE_X * pxPerMm.get(),
+                    MATERIAL_SIZE_Y * pxPerMm.get()));
             margin = MOTIF_WIDTH_MM * pxPerMm.get() / 2;
         });
 
@@ -177,7 +216,6 @@ public class DrawPane extends BorderPane {
         title.setTextFill(Color.WHITE);
         title.setFont(Font.font(25));
         BorderPane.setAlignment(title, Pos.CENTER);
-
 
         setCenter(stackPane);
         setTop(title);
@@ -212,7 +250,7 @@ public class DrawPane extends BorderPane {
         errorMessage.layoutYProperty().bind(canvas.layoutYProperty());
         errorMessage.setAlignment(Pos.BOTTOM_CENTER);
         errorMessage.setPadding(new Insets(PADDING));
-
+        
         drawToolBox.setManaged(false);
         drawToolBox.layoutXProperty().bind(canvas.layoutXProperty().subtract(
                 drawToolBox.widthProperty()));
@@ -241,10 +279,8 @@ public class DrawPane extends BorderPane {
     protected void layoutChildren() {
         super.layoutChildren();
         drawToolBox.resize(drawToolBox.prefWidth(stackPane.getHeight()), stackPane.getHeight());        
-        System.out.println("canvas.getLayoutX() = " + canvas.getLayoutX());
-        System.out.println("drawToolBox.getWidth() = " + drawToolBox.getWidth());
     }
-
+    
     public final boolean undoInitials() {
         for (int i = initials.getElements().size() - 1; i >= 0; i--) {
             if (initials.getElements().get(i) instanceof MoveTo) {
@@ -265,6 +301,7 @@ public class DrawPane extends BorderPane {
         canvas.setOnTouchPressed(e -> startDrawing(e));
         canvas.setOnTouchMoved(e -> continueDrawing(e));
         canvas.setOnTouchReleased(e -> stopDrawing(e));
+        canvas.requestFocus();
         title.setText("Draw shape");
         drawToolBox.remove.setOnAction(t -> resetShape());
     }
@@ -285,6 +322,7 @@ public class DrawPane extends BorderPane {
         canvas.setOnTouchPressed(e -> positionHole(e));
         canvas.setOnTouchMoved(e -> positionHole(e));
         canvas.setOnTouchReleased(null);
+        canvas.requestFocus();
         title.setText("Position badge holder hole");        
         drawToolBox.remove.setOnAction(t -> resetHole());
     }
@@ -294,10 +332,17 @@ public class DrawPane extends BorderPane {
             readyToCut();
             return;
         }
+        canvas.setOnMousePressed(null);
+        canvas.setOnMouseDragged(null);
+        canvas.setOnMouseReleased(null);
+        canvas.setOnTouchPressed(null);
+        canvas.setOnTouchMoved(null);
+        canvas.setOnTouchReleased(null);
         drawStep.set(DrawStep.TypeText);
         drawToolBox.mode.selectToggle(drawToolBox.text);
         title.setText("Type text");
         drawToolBox.remove.setOnAction(t -> resetText());
+        textField.requestFocus();
     }
 
     private void drawInitials() {
@@ -317,6 +362,7 @@ public class DrawPane extends BorderPane {
         canvas.setOnTouchReleased(e -> continueDrawingInitials(e));
         title.setText("Draw your initials");
         drawToolBox.remove.setOnAction(t -> undoInitials());
+        canvas.requestFocus();
     }
 
     public void readyToCut() {
@@ -505,11 +551,11 @@ public class DrawPane extends BorderPane {
         g.getTransforms().addAll(
                 new Translate(0, -Configuration.MATERIAL_SIZE_Y),
                 new Scale(pxPerMm.get(), -pxPerMm.get(), 0, MATERIAL_SIZE_Y));
-        stackPane.getChildren().addAll(1, Arrays.asList(g, outlinePath));
+        stackPane.getChildren().addAll(FROZEN_NODES, Arrays.asList(g, outlinePath));
 
         positionHole();
     }
-
+    
     private static void printPathCount(Path path, String name) {
         System.out.println(name + " count = " + path.getElements().stream().filter(
                 elem -> elem instanceof MoveTo).count());
@@ -526,7 +572,8 @@ public class DrawPane extends BorderPane {
     }
     
     private void resetText() {
-        getTextPane().setText("");
+        text.set("");
+        textField.requestFocus();
     }
 
     private void resetShape() {
@@ -551,6 +598,11 @@ public class DrawPane extends BorderPane {
     public void reset() {
         resetShape();
         resetHole();
+        resetText();
+        resetInitials();
+    }
+
+    private void resetInitials() {
         initials.getElements().clear();
     }
 
@@ -614,7 +666,7 @@ public class DrawPane extends BorderPane {
                     new Translate(0, -Configuration.MATERIAL_SIZE_Y),
                     new Scale(pxPerMm.get(), -pxPerMm.get(), 0, Configuration.MATERIAL_SIZE_Y));
             pathThick.getElements().clear();
-            stackPane.getChildren().add(1, outlinePath);
+            stackPane.getChildren().add(FROZEN_NODES, outlinePath);
             outlinePath.setMouseTransparent(true);
             outlinePath.setManaged(false);
             outlinePath.layoutXProperty().bind(canvas.layoutXProperty());
@@ -622,6 +674,8 @@ public class DrawPane extends BorderPane {
             outline.set(outlinePath);
         }
     }
+    
+    private static final int FROZEN_NODES = 2;
 
     private double clampX(double x) {
         return Math.max(margin, Math.min(x, canvas.getWidth() - margin));

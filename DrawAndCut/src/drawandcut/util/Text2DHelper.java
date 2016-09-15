@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javafx.beans.binding.Bindings;
+import javafx.geometry.VPos;
 
 /**
  * @author José Pereda
@@ -34,15 +36,21 @@ public class Text2DHelper {
     private Point3D p0;
     private final List<LineSegment> polis = new ArrayList<>();
 
-    public Text2DHelper(String text, String font, double size) {
+    public Text2DHelper(String text, String font, double size, double maxWidth, double maxHeight) {
         this.text = text;
         list = new ArrayList<>();
 
         Text textNode = new Text(text);
+        textNode.translateXProperty().bind(Bindings.createDoubleBinding(
+                () -> -textNode.getBoundsInLocal().getMinX(),
+                textNode.boundsInLocalProperty()));
+        textNode.translateYProperty().bind(Bindings.createDoubleBinding(
+                () -> -textNode.getBoundsInLocal().getMinY(),
+                textNode.boundsInLocalProperty()));
         textNode.setFont(new Font(font, size));
 
         // Convert Text to Path
-        Path subtract = (Path) (Shape.subtract(textNode, new Rectangle(0, 0)));
+        Path subtract = (Path) (Shape.intersect(textNode, new Rectangle(maxWidth, maxHeight)));
         // Convert Path elements into lists of points defining the perimeter (exterior or interior)
         subtract.getElements().forEach(this::getPoints);
 
