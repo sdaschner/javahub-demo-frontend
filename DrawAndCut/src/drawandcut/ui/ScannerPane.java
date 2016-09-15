@@ -24,6 +24,7 @@
 package drawandcut.ui;
 
 import drawandcut.Configuration;
+import static drawandcut.Configuration.log;
 import drawandcut.scanner.QRCodeScanner;
 import java.util.function.Consumer;
 import javafx.beans.property.BooleanProperty;
@@ -101,7 +102,7 @@ public class ScannerPane extends BorderPane {
     public void start() {        
         title.setText("Scan QR code");
         counter = 0;
-        System.out.println("ScannerPane.start()");
+        log("ScannerPane.start()");
         if (previewBounds == null) {
             startAfterLayout = true;
         } else {
@@ -129,11 +130,11 @@ public class ScannerPane extends BorderPane {
             return;
         }
         running = true;
-        System.out.println("ScannerPane.doStart()");
+        log("ScannerPane.doStart()");
         setPreviewBounds();
         codeScanner.startTakingStillImages(previewBounds.getWidth(), previewBounds.getHeight(), (image, code) -> {
             running = false;
-            System.out.println((counter++) + ". image = " + image);
+            log((counter++) + ". image = " + image);
             previewImage.setImage(image);
             if (onRead != null) {
                 onRead.accept(code);
@@ -153,7 +154,7 @@ public class ScannerPane extends BorderPane {
     }
     
     public void stop() {
-        System.out.println("ScannerPane.stop()");
+        log("ScannerPane.stop()");
         codeScanner.stopTakingStillImages();
         running = false;
     }

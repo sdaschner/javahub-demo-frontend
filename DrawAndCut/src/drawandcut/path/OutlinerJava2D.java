@@ -51,7 +51,7 @@ public class OutlinerJava2D implements Outliner {
         PathIterator pathIterator = area.getPathIterator(null, Configuration.FLATNESS);
         Path outline = PathConversions.convertToPath(pathIterator);
         int pathCount = (int) outline.getElements().stream().filter(elem -> elem instanceof MoveTo).count();
-        System.out.println("pathCount = " + pathCount);
+        log("pathCount = " + pathCount);
         if (pathCount != 2) {
             throw new IllegalArgumentException("Path has intersections or has no interior");
         }   
@@ -61,7 +61,7 @@ public class OutlinerJava2D implements Outliner {
     @Override
     public Path generateFilledOutline(Path path) {
         Path2D path2D = PathConversions.convertToPath2D(path);        
-        System.out.println("path2D.getBounds2D() = " + path2D.getBounds2D());
+        log("path2D.getBounds2D() = " + path2D.getBounds2D());
         BasicStroke basicStroke = new BasicStroke(
                 (float) (Configuration.TOOL_DIAMETER/* * 0.75*/), 
                 BasicStroke.CAP_ROUND, 
@@ -72,8 +72,8 @@ public class OutlinerJava2D implements Outliner {
         PathIterator pathIterator = area.getPathIterator(null, Configuration.FLATNESS);
         Path outline = PathConversions.convertToPath(pathIterator);
         int pathCount = (int) outline.getElements().stream().filter(elem -> elem instanceof MoveTo).count();
-        System.out.println("pathCount = " + pathCount);
-        System.out.println("outline.getBoundsInLocal() = " + outline.getBoundsInLocal());
+        log("pathCount = " + pathCount);
+        log("outline.getBoundsInLocal() = " + outline.getBoundsInLocal());
 //        if (pathCount != 2) {
 //            throw new IllegalArgumentException("The path cannot have intersections or have no interior outline");
 //        }   

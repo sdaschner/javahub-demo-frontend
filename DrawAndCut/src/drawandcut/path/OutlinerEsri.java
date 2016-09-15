@@ -51,7 +51,7 @@ public class OutlinerEsri implements Outliner {
         
         Polyline outlinePolyline = (Polyline) outlineGeom;
         int pathCount = outlinePolyline.getPathCount();
-        System.out.println("pathCount = " + pathCount);
+        log("pathCount = " + pathCount);
         if (pathCount != 2) {
             throw new IllegalArgumentException("Path has intersections or has no interior");
         }   
@@ -123,7 +123,7 @@ public class OutlinerEsri implements Outliner {
         
         Polyline outlinePolyline = (Polyline) outlineGeom;
         int pathCount = outlinePolyline.getPathCount();
-        System.out.println("pathCount = " + pathCount);
+        log("pathCount = " + pathCount);
 //        if (pathCount != 2) {
 //            throw new IllegalArgumentException("The path cannot have intersections or have no interior outline");
 //        }   

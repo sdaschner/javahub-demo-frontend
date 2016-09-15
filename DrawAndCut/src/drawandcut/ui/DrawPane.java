@@ -567,8 +567,8 @@ public class DrawPane extends BorderPane {
         outlinePath.setManaged(false);
         outlinePath.layoutXProperty().bind(canvas.layoutXProperty());
         outlinePath.layoutYProperty().bind(canvas.layoutYProperty());
-        System.out.println("before outline.getBoundsInLocal() = " + outlinePath.getBoundsInLocal());
-        System.out.println("after outline.getBoundsInParent() = " + outlinePath.getBoundsInParent());
+        log("before outline.getBoundsInLocal() = " + outlinePath.getBoundsInLocal());
+        log("after outline.getBoundsInParent() = " + outlinePath.getBoundsInParent());
         outlinePath.setUserData(SortOrder.OUTLINE.ordinal());
         outline.set(outlinePath);
 
@@ -588,7 +588,7 @@ public class DrawPane extends BorderPane {
     }
     
     private static void printPathCount(Path path, String name) {
-        System.out.println(name + " count = " + path.getElements().stream().filter(
+        log(name + " count = " + path.getElements().stream().filter(
                 elem -> elem instanceof MoveTo).count());
     }
 
