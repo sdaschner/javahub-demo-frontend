@@ -147,6 +147,7 @@ public class Cutter {
                 switch (initState) {
                     case NOT_CONNECTED:
                         initState = InitSequenceState.CONNECTED;
+                        grblController.softReset(); // Just in case
                         break;
                     case CONNECTED:
                         initState = InitSequenceState.HOMING;
@@ -228,6 +229,7 @@ public class Cutter {
             ready.set(false);
             try {
                 grblController.cancelSend();
+                grblController.softReset();
                 grblController.closeCommPort();
                 grblController = null;
                 initState = InitSequenceState.NOT_CONNECTED;
