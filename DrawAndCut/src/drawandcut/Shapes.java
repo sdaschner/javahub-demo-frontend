@@ -24,6 +24,7 @@
 package drawandcut;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,9 +46,10 @@ public class Shapes {
     }
     
     private void load() {
-        try {
+        try (InputStream resourceAsStream
+                    = Shapes.class.getResourceAsStream("shapes.properties")) {
             Properties props = new Properties();
-            props.load(Shapes.class.getResourceAsStream("shapes.properties"));
+            props.load(resourceAsStream);
             props.keySet().forEach(k -> {
                 String key = (String) k;
                 double size = 200;
@@ -86,7 +88,7 @@ public class Shapes {
 
         public double getSize() {
             return size;
-        }
+    }
 
         public String getSvg() {
             return svg;
