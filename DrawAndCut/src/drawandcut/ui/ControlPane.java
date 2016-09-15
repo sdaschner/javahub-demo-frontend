@@ -23,22 +23,25 @@
  */
 package drawandcut.ui;
 
-import static drawandcut.Configuration.*;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
+
+import static drawandcut.Configuration.*;
 
 /**
- *
  * @author akouznet
  */
 public class ControlPane extends GridPane {
-
-
     private final ToggleButton scan = new ToggleButton("Scan");
     private final ToggleButton draw = new ToggleButton("Draw");
+    private final TextField initials = new TextField();
+
     private final Button cut = new Button("Cut");
     private final ToggleButton load = new ToggleButton("Load");
     private final ToggleButton exit = new ToggleButton("Exit");
@@ -56,17 +59,26 @@ public class ControlPane extends GridPane {
         setPadding(new Insets(PADDING));
         setVgap(PADDING);
         setAlignment(Pos.CENTER);
-        addRow(0, scan);
-        addRow(1, draw);
-        addRow(2, load);
-        addRow(3, cut);
+        
+        VBox initialPane = new VBox();
+        initialPane.setAlignment(Pos.CENTER);
+        initialPane.getChildren().addAll(initials, new Label("Text"));
+        
+        int rowIndex = 0;
+        addRow(rowIndex++, scan);
+        addRow(rowIndex++, draw);
+        if (ENABLE_TEXT) {
+            addRow(rowIndex++, initialPane);
+        }
+        addRow(rowIndex++, load);
+        addRow(rowIndex++, cut);
 
         if (ENABLE_EVENER) {
-            addRow(4, even);
+            addRow(rowIndex++, even);
         }
-        addRow(5, exit);
+        addRow(rowIndex++, exit);
     }
-    
+
     public Button cutButton() {
         return cut;
     }
@@ -74,11 +86,11 @@ public class ControlPane extends GridPane {
     public ToggleButton loadButton() {
         return load;
     }
-    
+
     public ToggleButton scanButton() {
         return scan;
     }
-    
+
     public ToggleButton drawButton() {
         return draw;
     }
@@ -89,5 +101,9 @@ public class ControlPane extends GridPane {
 
     public Button evenButton() {
         return even;
+    }
+
+    public TextField initialsField() {
+        return initials;
     }
 }

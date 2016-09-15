@@ -24,7 +24,10 @@
 package drawandcut.ui;
 
 import drawandcut.Configuration;
-import static drawandcut.Configuration.*;
+import drawandcut.path.Outliner;
+import drawandcut.path.OutlinerEsri;
+import drawandcut.path.PathConversions;
+import drawandcut.path.SmallPolygonsCleaner;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -39,21 +42,17 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.ClosePath;
+import javafx.scene.shape.FillRule;
 import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
-import javafx.scene.shape.StrokeLineCap;
-import javafx.scene.shape.StrokeLineJoin;
-import drawandcut.path.Outliner;
-import drawandcut.path.PathConversions;
-import drawandcut.path.SmallPolygonsCleaner;
-import javafx.scene.shape.FillRule;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.shape.Shape;
+import javafx.scene.shape.StrokeLineCap;
+import javafx.scene.shape.StrokeLineJoin;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
-import drawandcut.path.OutlinerEsri;
 import java.util.stream.Collectors;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -69,16 +68,22 @@ import javafx.scene.layout.HBox;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.PathElement;
 import javafx.scene.text.Font;
+import static drawandcut.Configuration.*;
+import java.util.stream.Stream;
 
 /**
- *
  * @author akouznet
  */
 public class DrawPane extends BorderPane {
-    
-    private static enum DrawStep { DrawShape, PositionHole, DrawInitials, ReadyToCut };
-    
-//    private static final Color CUT_COLOR = BACKGROUND_COLOR;
+    private final TextPane textPane;
+
+    public TextPane getTextPane() {
+        return textPane;
+    }
+
+    private enum DrawStep {DrawShape, PositionHole, DrawInitials, ReadyToCut}
+
+    //    private static final Color CUT_COLOR = BACKGROUND_COLOR;
     private static final Color CUT_COLOR = Color.BLACK;
     private final Pane canvas = new Pane();
     private final Path pathThin = new Path();
@@ -107,7 +112,7 @@ public class DrawPane extends BorderPane {
         stackPane = new StackPane();
         canvas.setBackground(new Background(new BackgroundFill(Color.WHITE, CornerRadii.EMPTY,
                 Insets.EMPTY)));
-        
+
         canvas.setMinSize(USE_PREF_SIZE, USE_PREF_SIZE);
         canvas.setMaxSize(USE_PREF_SIZE, USE_PREF_SIZE);
         canvas.prefWidthProperty().bind(Bindings.createDoubleBinding(() -> {
@@ -118,8 +123,15 @@ public class DrawPane extends BorderPane {
                     return Math.min(stackPane.widthProperty().get() / MATERIAL_SIZE_RATIO, stackPane.heightProperty().get());
                 },
                 stackPane.widthProperty(), stackPane.heightProperty()));
+
+
         stackPane.getChildren().add(canvas);
-        
+
+        textPane = new TextPane();
+        textPane.setMouseTransparent(true);
+        stackPane.getChildren().add(textPane);
+
+
         pathThick.setStrokeLineCap(StrokeLineCap.ROUND);
         pathThick.setStrokeLineJoin(StrokeLineJoin.ROUND);
         pathThick.setStroke(CUT_COLOR);
@@ -128,7 +140,7 @@ public class DrawPane extends BorderPane {
         pathThick.layoutXProperty().bind(canvas.layoutXProperty());
         pathThick.layoutYProperty().bind(canvas.layoutYProperty());
         stackPane.getChildren().add(pathThick);
-        
+
         initials.setStrokeLineCap(StrokeLineCap.ROUND);
         initials.setStrokeLineJoin(StrokeLineJoin.ROUND);
         initials.setStroke(Color.web("7999AC"));
@@ -137,7 +149,7 @@ public class DrawPane extends BorderPane {
         initials.layoutXProperty().bind(canvas.layoutXProperty());
         initials.layoutYProperty().bind(canvas.layoutYProperty());
         stackPane.getChildren().add(initials);
-        
+
         pathThin.setStrokeLineCap(StrokeLineCap.ROUND);
         pathThin.setStrokeLineJoin(StrokeLineJoin.ROUND);
         pathThin.setStroke(Color.web("FF8080"));
@@ -146,25 +158,27 @@ public class DrawPane extends BorderPane {
         pathThin.layoutXProperty().bind(canvas.layoutXProperty());
         pathThin.layoutYProperty().bind(canvas.layoutYProperty());
         stackPane.getChildren().add(pathThin);
-        
+
+
         canvas.widthProperty().addListener(e -> {
             pxPerMm.set(canvas.getWidth() / MATERIAL_SIZE_X);
             pathThin.setStrokeWidth(MOTIF_WIDTH_MM * pxPerMm.get());
             pathThick.setStrokeWidth((MOTIF_WIDTH_MM + 2 * TOOL_DIAMETER) * pxPerMm.get());
             initials.setStrokeWidth(TOOL_DIAMETER * pxPerMm.get());
+            textPane.setStrokeWidth(TOOL_DIAMETER * pxPerMm.get());
             margin = MOTIF_WIDTH_MM * pxPerMm.get() / 2;
         });
-        
+
         title = new Label("Draw");
         title.setTextFill(Color.WHITE);
         title.setFont(Font.font(25));
         BorderPane.setAlignment(title, Pos.CENTER);
-        
+
         nextButton.setId("nextButton");
         nextButton.disableProperty()
                 .bind(drawStep.isEqualTo(DrawStep.DrawShape)
-                .or(drawStep.isEqualTo(DrawStep.ReadyToCut))
-                .or(drawStep.isEqualTo(DrawStep.PositionHole).and(hole.isNull())));
+                        .or(drawStep.isEqualTo(DrawStep.ReadyToCut))
+                        .or(drawStep.isEqualTo(DrawStep.PositionHole).and(hole.isNull())));
         nextButton.setOnAction(t -> next());
         prevButton.setId("prevButton");
         prevButton.disableProperty()
@@ -173,12 +187,12 @@ public class DrawPane extends BorderPane {
         HBox topHBox = new HBox(prevButton, title, nextButton);
         topHBox.setSpacing(20);
         topHBox.setAlignment(Pos.CENTER);
-        
+
         setCenter(stackPane);
         setTop(topHBox);
-        
+
         drawShape();
-        
+
         holeCircle = new Circle();
         holeCircle.radiusProperty().bind(pxPerMm.multiply(HOLE_DIAMETER / 2));
         holeCircle.setFill(CUT_COLOR);
@@ -186,7 +200,7 @@ public class DrawPane extends BorderPane {
         holeCircle.setMouseTransparent(true);
         holeCircle.layoutXProperty().bind(canvas.layoutXProperty());
         holeCircle.layoutYProperty().bind(canvas.layoutYProperty());
-        
+
         holeSafeZone = new Circle();
         holeSafeZone.radiusProperty().bind(pxPerMm.multiply((HOLE_DISTANCE_FROM_EDGE + HOLE_DIAMETER) / 2));
         holeSafeZone.setStroke(Color.web("#7999AC"));
@@ -198,7 +212,7 @@ public class DrawPane extends BorderPane {
         holeSafeZone.layoutYProperty().bind(canvas.layoutYProperty());
         holeSafeZone.centerXProperty().bind(holeCircle.centerXProperty());
         holeSafeZone.centerYProperty().bind(holeCircle.centerYProperty());
-        
+
         errorMessage.setTextFill(Color.RED);
         errorMessage.setFont(Font.font(20));
         errorMessage.setManaged(false);
@@ -207,9 +221,9 @@ public class DrawPane extends BorderPane {
         errorMessage.layoutYProperty().bind(canvas.layoutYProperty());
         errorMessage.setAlignment(Pos.BOTTOM_CENTER);
         errorMessage.setPadding(new Insets(PADDING));
-        
+
     }
-    
+
     public final void prev() {
         switch (drawStep.get()) {
             case PositionHole:
@@ -237,7 +251,7 @@ public class DrawPane extends BorderPane {
                 throw new IllegalStateException("Cannot proceed to the next drawing stage from this: " + drawStep.get());
         }
     }
-    
+
     public final boolean undoInitials() {
         for (int i = initials.getElements().size() - 1; i >= 0; i--) {
             if (initials.getElements().get(i) instanceof MoveTo) {
@@ -247,7 +261,7 @@ public class DrawPane extends BorderPane {
         }
         return false;
     }
-    
+
     public final void next() {
         switch (drawStep.get()) {
             case PositionHole:
@@ -260,7 +274,7 @@ public class DrawPane extends BorderPane {
                 throw new IllegalStateException("Cannot proceed to the next drawing stage from this: " + drawStep.get());
         }
     }
-    
+
     public final void drawShape() {
         drawStep.set(DrawStep.DrawShape);
         canvas.setOnMousePressed(e -> startDrawing(e));
@@ -271,7 +285,7 @@ public class DrawPane extends BorderPane {
         canvas.setOnTouchReleased(e -> stopDrawing(e));
         reset();
     }
-    
+
     public void positionHole() {
         if (NO_HOLE) {
             readyToCut();
@@ -286,7 +300,7 @@ public class DrawPane extends BorderPane {
         canvas.setOnTouchReleased(null);
         title.setText("Position badge holder hole");
     }
-    
+
     private void drawInitials() {
         if (NO_HOLE) {
             readyToCut();
@@ -303,12 +317,12 @@ public class DrawPane extends BorderPane {
         canvas.setOnTouchReleased(e -> continueDrawingInitials(e));
         title.setText("Draw your initials");
     }
-    
+
     public void readyToCut() {
         drawStep.set(DrawStep.ReadyToCut);
         title.setText("Ready to cut");
     }
-    
+
     private double getX(InputEvent e) {
         if (e instanceof MouseEvent) {
             MouseEvent me = MouseEvent.class.cast(e);
@@ -320,7 +334,7 @@ public class DrawPane extends BorderPane {
             return Double.NaN;
         }
     }
-    
+
     private double getY(InputEvent e) {
         if (e instanceof MouseEvent) {
             MouseEvent me = MouseEvent.class.cast(e);
@@ -332,7 +346,7 @@ public class DrawPane extends BorderPane {
             return Double.NaN;
         }
     }
-    
+
     private void startDrawing(InputEvent e) {
         double x = getX(e), y = getY(e);
         if (Double.isNaN(x) || Double.isNaN(y)) {
@@ -341,7 +355,7 @@ public class DrawPane extends BorderPane {
         reset();
         drawing.set(new Drawing(x, y));
     }
-    
+
     private void continueDrawing(InputEvent e) {
         if (drawing.get() == null) {
             return;
@@ -352,7 +366,7 @@ public class DrawPane extends BorderPane {
         }
         drawing.get().continueTo(x, y);
     }
-    
+
     private void stopDrawing(InputEvent e) {
         if (drawing.get() == null) {
             return;
@@ -372,7 +386,7 @@ public class DrawPane extends BorderPane {
             showErrorMessage(iae);
         }
     }
-    
+
     private void positionHole(InputEvent e) {
         if (drawing.get() == null) {
             return;
@@ -383,7 +397,7 @@ public class DrawPane extends BorderPane {
         }
         drawing.get().positionHole(x, y);
     }
-    
+
     private void startDrawingInitials(InputEvent e) {
         double x = getX(e), y = getY(e);
         if (Double.isNaN(x) || Double.isNaN(y)) {
@@ -396,7 +410,7 @@ public class DrawPane extends BorderPane {
         }
         ie.add(new MoveTo(clampX(x), clampY(y)));
     }
-    
+
     private void continueDrawingInitials(InputEvent e) {
         double x = getX(e), y = getY(e);
         if (Double.isNaN(x) || Double.isNaN(y)) {
@@ -423,33 +437,35 @@ public class DrawPane extends BorderPane {
         LineTo aLineTo = (LineTo) obj;
         return lineTo.getX() == aLineTo.getX() && lineTo.getY() == aLineTo.getY();
     }
-    
-    public static enum ImportSource { MODEL, WEBAPP };
-    
+
+    public static enum ImportSource {MODEL, WEBAPP}
+
+    ;
+
     public void importSVG(String svg, double size, ImportSource importSource) {
         SVGPath svgPath = new SVGPath();
         svgPath.setContent(svg);
         svgPath.setFillRule(FillRule.EVEN_ODD);
-        
+
         Bounds b = svgPath.getBoundsInLocal();
         if (b.getWidth() != 0 && b.getHeight() != 0) {
             double scale = Math.min(
-                    Math.min(size, MATERIAL_SIZE_X) / b.getWidth(), 
-                    Math.min(size, MATERIAL_SIZE_Y) / b.getHeight());            
+                    Math.min(size, MATERIAL_SIZE_X) / b.getWidth(),
+                    Math.min(size, MATERIAL_SIZE_Y) / b.getHeight());
             svgPath.getTransforms().addAll(
                     new Translate(
-                            -b.getMinX() * scale + (MATERIAL_SIZE_X - b.getWidth() * scale) / 2, 
-                            -b.getMinY() * -scale + (MATERIAL_SIZE_Y - b.getHeight() * -scale) / 2), 
+                            -b.getMinX() * scale + (MATERIAL_SIZE_X - b.getWidth() * scale) / 2,
+                            -b.getMinY() * -scale + (MATERIAL_SIZE_Y - b.getHeight() * -scale) / 2),
                     new Scale(scale, -scale));
         }
 //        System.out.println("before svgPath.getBoundsInLocal() = " + svgPath.getBoundsInLocal());
 //        System.out.println("after svgPath.getBoundsInParent() = " + svgPath.getBoundsInParent());
-        
+
         drawing.set(new Drawing(0, 0)); // TODO: Fix this workaround to indicate there is a drawing
         reset();
         Path path = (Path) Shape.union(svgPath, new Rectangle(0, 0));
         printPathCount(path, "path");
-        Path simplifiedPath = simplify(path);    
+        Path simplifiedPath = simplify(path);
         printPathCount(simplifiedPath, "simplifiedPath");
         Path outlinePath;
         switch (importSource) {
@@ -470,7 +486,7 @@ public class DrawPane extends BorderPane {
         outlinePath.setStrokeLineJoin(StrokeLineJoin.ROUND);
         outlinePath.setStrokeLineCap(StrokeLineCap.ROUND);
         outlinePath.getTransforms().addAll(
-                new Translate(0, -Configuration.MATERIAL_SIZE_Y), 
+                new Translate(0, -Configuration.MATERIAL_SIZE_Y),
                 new Scale(pxPerMm.get(), -pxPerMm.get(), 0, MATERIAL_SIZE_Y));
         outlinePath.setMouseTransparent(true);
         outlinePath.setManaged(false);
@@ -488,10 +504,10 @@ public class DrawPane extends BorderPane {
         g.layoutXProperty().bind(canvas.layoutXProperty());
         g.layoutYProperty().bind(canvas.layoutYProperty());
         g.getTransforms().addAll(
-                new Translate(0, -Configuration.MATERIAL_SIZE_Y), 
+                new Translate(0, -Configuration.MATERIAL_SIZE_Y),
                 new Scale(pxPerMm.get(), -pxPerMm.get(), 0, MATERIAL_SIZE_Y));
         stackPane.getChildren().addAll(g, outlinePath);
-        
+
         positionHole();
     }
 
@@ -499,7 +515,7 @@ public class DrawPane extends BorderPane {
         System.out.println(name + " count = " + path.getElements().stream().filter(
                 elem -> elem instanceof MoveTo).count());
     }
-    
+
     private Path simplify(Path path) {
         // step 1: remove cubic curves
         Path path1 = PathConversions.convertToPath(PathConversions.convertToPath2D(
@@ -509,7 +525,7 @@ public class DrawPane extends BorderPane {
         Path path2 = SmallPolygonsCleaner.clean(path1);
         return path2;
     }
-    
+
     private void reset() {
         if (outline.get() != null) {
             stackPane.getChildren().remove(outline.get());
@@ -532,23 +548,23 @@ public class DrawPane extends BorderPane {
         private Path p = new Path();
 
         private Drawing(double x, double y) {
-            x = clampX(x); 
+            x = clampX(x);
             y = clampY(y);
             p.getElements().add(new MoveTo(convertX(x), convertY(y)));
             pathThin.getElements().add(new MoveTo(x, y));
             pathThick.getElements().add(new MoveTo(x, y));
         }
-        
+
         private void continueTo(double x, double y) {
-            x = clampX(x); 
+            x = clampX(x);
             y = clampY(y);
             p.getElements().add(new LineTo(convertX(x), convertY(y)));
             pathThin.getElements().add(new LineTo(x, y));
             pathThick.getElements().add(new LineTo(x, y));
         }
-        
+
         private void stop(double x, double y) {
-            x = clampX(x); 
+            x = clampX(x);
             y = clampY(y);
             p.getElements().add(new LineTo(convertX(x), convertY(y)));
             p.getElements().add(new ClosePath());
@@ -560,7 +576,7 @@ public class DrawPane extends BorderPane {
         }
 
         private void positionHole(double x, double y) {
-            x = clampX(x); 
+            x = clampX(x);
             y = clampY(y);
             hole.set(new Point2D(convertX(x), convertY(y)));
 
@@ -571,21 +587,21 @@ public class DrawPane extends BorderPane {
                 stackPane.getChildren().add(holeSafeZone);
             }
         }
-        
+
         public Path getPath() {
             return new Path(p.getElements());
         }
 
         private void generateOutline() {
-    //        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(80, 25), new LineTo(100, 50), new LineTo(0, 50), new ClosePath());
-    //        Outliner outliner = new Outliner(path);
+            //        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(80, 25), new LineTo(100, 50), new LineTo(0, 50), new ClosePath());
+            //        Outliner outliner = new Outliner(path);
             Path outlinePath = outliner.generateOutline(drawing.get().getPath());
             outlinePath.setStrokeWidth(Configuration.TOOL_DIAMETER);
             outlinePath.setStroke(CUT_COLOR);
             outlinePath.setStrokeLineJoin(StrokeLineJoin.ROUND);
             outlinePath.setStrokeLineCap(StrokeLineCap.ROUND);
             outlinePath.getTransforms().addAll(
-                    new Translate(0, -Configuration.MATERIAL_SIZE_Y), 
+                    new Translate(0, -Configuration.MATERIAL_SIZE_Y),
                     new Scale(pxPerMm.get(), -pxPerMm.get(), 0, Configuration.MATERIAL_SIZE_Y));
             pathThick.getElements().clear();
             stackPane.getChildren().add(outlinePath);
@@ -596,7 +612,7 @@ public class DrawPane extends BorderPane {
             outline.set(outlinePath);
         }
     }
-    
+
     private double clampX(double x) {
         return Math.max(margin, Math.min(x, canvas.getWidth() - margin));
     }
@@ -624,13 +640,20 @@ public class DrawPane extends BorderPane {
     public ObjectProperty<Point2D> holeProperty() {
         return hole;
     }
-    
+
     public ObjectProperty<Path> outlineProperty() {
         return outline;
     }
-    
+
     public Path getInitials() {
-        return new Path(initials.getElements().stream().map(pathElement -> {
+        Path textInitials = textPane.getAll();
+        Bounds b = textInitials.getBoundsInLocal();
+        double dx = b.getMinX() + b.getWidth() / 2 - canvas.getWidth() / 2;
+        double dy = b.getMinY() + b.getHeight()/ 2 - canvas.getHeight() / 2;
+        if (!ENABLE_TEXT) {
+            textInitials = new Path();
+        }
+        return new Path(Stream.concat(initials.getElements().stream().map(pathElement -> {
             if (pathElement instanceof MoveTo) {
                 MoveTo mt = (MoveTo) pathElement;
                 return new MoveTo(convertX(mt.getX()), convertY(mt.getY()));
@@ -640,6 +663,18 @@ public class DrawPane extends BorderPane {
             } else {
                 throw new IllegalStateException("Unexpected path element: " + pathElement);
             }
-        }).collect(Collectors.toList()));
+        }), textInitials.getElements().stream().map(pathElement -> {
+            if (pathElement instanceof MoveTo) {
+                MoveTo mt = (MoveTo) pathElement;
+                return new MoveTo(convertX(mt.getX() - dx), convertY(mt.getY() - dy));
+            } else if (pathElement instanceof LineTo) {
+                LineTo mt = (LineTo) pathElement;
+                return new LineTo(convertX(mt.getX() - dx), convertY(mt.getY() - dy));
+            } else if (pathElement instanceof ClosePath) {
+                return pathElement;
+            } else {
+                throw new IllegalStateException("Unexpected path element: " + pathElement);
+            }
+        })).collect(Collectors.toList()));
     }
 }

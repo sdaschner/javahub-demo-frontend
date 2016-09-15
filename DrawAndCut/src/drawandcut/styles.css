@@ -36,7 +36,8 @@
 }
 #exitPopup .button,
 #controlPane .button,
-#controlPane .toggle-button {
+#controlPane .toggle-button,
+#controlPane>VBox {
     -fx-pref-width: 100;
     -fx-pref-height: 70;
 }
