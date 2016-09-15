@@ -51,10 +51,12 @@ import javafx.scene.paint.Color;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import drawandcut.gcode.SurfaceEvener;
+import drawandcut.ui.ExitPopup;
 import java.io.FileNotFoundException;
 import java.net.ConnectException;
 import java.net.NoRouteToHostException;
 import javafx.concurrent.Task;
+import javafx.geometry.Bounds;
 
 /**
  *
@@ -70,6 +72,7 @@ public class DrawAndCut extends Application {
     private DrawPane drawPane;
     private BorderPane borderPane;
     private Task<String> downloadTask;
+    private ExitPopup exitPopup;
 
     /**
      * @param args the command line arguments
@@ -159,7 +162,21 @@ public class DrawAndCut extends Application {
                 cutter.sendSequence(output.toArray(new String[output.size()]));
             }
         });
-        controlPane.exitButton().setOnAction(t -> System.exit(0));
+        controlPane.exitButton().setOnAction(x -> {
+            scannerPane.stop();
+            if (exitPopup == null) {
+                exitPopup = new ExitPopup();
+                exitPopup.exit.setOnAction(t -> System.exit(0));
+                exitPopup.restart.setOnAction(t -> System.exit(25));
+                exitPopup.reboot.setOnAction(t -> reboot());
+                exitPopup.poweroff.setOnAction(t -> poweroff());
+            }
+            exitPopup.setOnHidden(t -> controlPane.exitButton().setSelected(false));
+            Bounds b = controlPane.exitButton().localToScreen(controlPane.exitButton().getBoundsInLocal());
+            exitPopup.show(primaryStage, 
+                    b.getMaxX() + PADDING, 
+                    b.getMinY() - PADDING);
+        });
         
         controlPane.evenButton().setOnAction(t -> {
             List<String> output = new SurfaceEvener(
@@ -233,6 +250,24 @@ public class DrawAndCut extends Application {
 //        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(0, 50), new ClosePath());
 //        Outliner outliner = new Outliner(path);
 //        Path outline = outliner.generateOutline();
+    }
+    
+    private static void reboot() {
+        try {
+            new ProcessBuilder("reboot", "now").inheritIO().start();
+        } catch (IOException ex) {
+            Logger.getLogger(DrawAndCut.class.getName()).log(Level.SEVERE, null,
+                    ex);
+        }
+    }
+    
+    private static void poweroff() {
+        try {
+            new ProcessBuilder("poweroff").inheritIO().start();
+        } catch (IOException ex) {
+            Logger.getLogger(DrawAndCut.class.getName()).log(Level.SEVERE, null,
+                    ex);
+        }
     }
     
     private static String readUrlToString(String url) throws IOException {

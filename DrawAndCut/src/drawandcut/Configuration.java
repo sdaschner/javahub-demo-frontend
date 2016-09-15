@@ -66,8 +66,6 @@ public class Configuration {
     
     public static final boolean NO_HOLE = Boolean.getBoolean("noHole");
     
-    public static final double BUTTON_PREF_WIDTH = 100;
-    public static final double BUTTON_PREF_HEIGHT = 70;
     public static final double PADDING = 8;
     
     public static final int SCREEN_PADDING_TOP = Integer.parseInt(System.getProperty("screenPaddingTop", "0"));

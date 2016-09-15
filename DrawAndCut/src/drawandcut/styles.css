@@ -1,5 +1,6 @@
 #controlPane,
-#flowPane {
+#flowPane, 
+#exitPopup {
     -fx-background-color: white;
 }
 
@@ -28,7 +29,17 @@
 .toggle-button:hover {
     -fx-background-color: F2F7F9;
 }
-
+#exitPopup {
+    -fx-padding: 8;
+    -fx-spacing: 8;
+    -fx-border-color: #5382A1;
+}
+#exitPopup .button,
+#controlPane .button,
+#controlPane .toggle-button {
+    -fx-pref-width: 100;
+    -fx-pref-height: 70;
+}
 #scan {
     -fx-graphic: url("ui/icons/qr-code-scan.png");
 }
@@ -40,6 +51,15 @@
 }
 #exit {
     -fx-graphic: url("ui/icons/exit.png");
+}
+#restart {
+    -fx-graphic: url("ui/icons/restart.png");
+}
+#reboot {
+    -fx-graphic: url("ui/icons/reboot.png");
+}
+#poweroff {
+    -fx-graphic: url("ui/icons/poweroff.png");
 }
 #cut {
     -fx-graphic: url("ui/icons/drilling-machine.png");
