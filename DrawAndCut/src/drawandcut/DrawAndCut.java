@@ -40,7 +40,6 @@ import javafx.stage.Stage;
 import drawandcut.ui.ScannerPane;
 import drawandcut.ui.ShapesPane;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Scanner;
 import javafx.beans.binding.Bindings;
@@ -55,6 +54,8 @@ import drawandcut.ui.ExitPopup;
 import java.io.FileNotFoundException;
 import java.net.ConnectException;
 import java.net.NoRouteToHostException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javafx.concurrent.Task;
 import javafx.geometry.Bounds;
 
@@ -235,6 +236,15 @@ public class DrawAndCut extends Application {
                     scannerPane.setTitle("Bad QR code");
                 } else if (ex instanceof NoRouteToHostException || ex instanceof ConnectException) {
                     scannerPane.setTitle("No connection to server");
+                } else if (ex instanceof IOException) {
+                    Matcher matcher
+                            = Pattern.compile("Server returned HTTP response code: ([0-9]{3}) for URL: ").matcher(ex.getMessage());
+                    if (matcher.find()) {
+                        int errorCode = Integer.parseInt(matcher.group(1));
+                        scannerPane.setTitle("Server returned " + errorCode);
+                    } else {
+                        scannerPane.setTitle("Load failed with " + ex.getClass().getSimpleName());
+                    }
                 } else {
                     scannerPane.setTitle("Load failed with " + ex.getClass().getSimpleName());
                 }
