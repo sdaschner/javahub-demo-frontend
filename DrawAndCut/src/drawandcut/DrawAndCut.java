@@ -108,11 +108,6 @@ public class DrawAndCut extends Application {
 
         drawPane = new DrawPane();
         drawPane.setFocusTraversable(true);
-        drawPane.holeProperty().addListener(o -> {
-            if (drawPane.holeProperty().get() != null) {
-                controlPane.drawButton().setSelected(false);
-            }
-        });
         drawPane.setPadding(new Insets(PADDING));
         borderPane.setCenter(drawPane);
 
