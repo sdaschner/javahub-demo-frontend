@@ -69,7 +69,11 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.PathElement;
 import javafx.scene.text.Font;
 import static drawandcut.Configuration.*;
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.stream.Stream;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 
 /**
  * @author akouznet
@@ -81,7 +85,7 @@ public class DrawPane extends BorderPane {
         return textPane;
     }
 
-    private enum DrawStep {DrawShape, PositionHole, DrawInitials, ReadyToCut}
+    private enum DrawStep {DrawShape, PositionHole, TypeText, DrawInitials, ReadyToCut}
 
     //    private static final Color CUT_COLOR = BACKGROUND_COLOR;
     private static final Color CUT_COLOR = Color.BLACK;
@@ -89,6 +93,7 @@ public class DrawPane extends BorderPane {
     private final Path pathThin = new Path();
     private final Path pathThick = new Path();
     private final Path initials = new Path();
+    private final DrawToolBox drawToolBox = new DrawToolBox();
     private ObjectProperty<Drawing> drawing = new SimpleObjectProperty<>();
     private final DoubleProperty pxPerMm = new SimpleDoubleProperty(1);
     private final StackPane stackPane;
@@ -100,9 +105,8 @@ public class DrawPane extends BorderPane {
     private final Circle holeCircle;
     private final Circle holeSafeZone;
     private final Outliner outliner = new OutlinerEsri();
+    private final StringProperty text = new SimpleStringProperty("");
     private double margin;
-    private final Button nextButton = new Button();
-    private final Button prevButton = new Button();
     private final ObjectProperty<DrawStep> drawStep = new SimpleObjectProperty<>(DrawStep.DrawShape);
 //    private final Outliner outliner = new OutlinerJava2D();
 
@@ -174,22 +178,9 @@ public class DrawPane extends BorderPane {
         title.setFont(Font.font(25));
         BorderPane.setAlignment(title, Pos.CENTER);
 
-        nextButton.setId("nextButton");
-        nextButton.disableProperty()
-                .bind(drawStep.isEqualTo(DrawStep.DrawShape)
-                        .or(drawStep.isEqualTo(DrawStep.ReadyToCut))
-                        .or(drawStep.isEqualTo(DrawStep.PositionHole).and(hole.isNull())));
-        nextButton.setOnAction(t -> next());
-        prevButton.setId("prevButton");
-        prevButton.disableProperty()
-                .bind(drawStep.isEqualTo(DrawStep.DrawShape));
-        prevButton.setOnAction(t -> prev());
-        HBox topHBox = new HBox(prevButton, title, nextButton);
-        topHBox.setSpacing(20);
-        topHBox.setAlignment(Pos.CENTER);
 
         setCenter(stackPane);
-        setTop(topHBox);
+        setTop(title);
 
         drawShape();
 
@@ -222,34 +213,36 @@ public class DrawPane extends BorderPane {
         errorMessage.setAlignment(Pos.BOTTOM_CENTER);
         errorMessage.setPadding(new Insets(PADDING));
 
+        drawToolBox.setManaged(false);
+        drawToolBox.layoutXProperty().bind(canvas.layoutXProperty().subtract(
+                drawToolBox.widthProperty()));
+        drawToolBox.shape.setOnAction(t -> drawShape());
+        drawToolBox.initials.setOnAction(t -> drawInitials());
+        drawToolBox.text.setOnAction(t -> typeText());
+        drawToolBox.hole.setOnAction(t -> positionHole());
+        drawToolBox.remove.disableProperty().bind(Bindings.createBooleanBinding(
+                () -> {
+                    switch (drawStep.get()) {
+                        case DrawShape:
+                            return pathThin.getElements().isEmpty();
+                        case PositionHole:
+                            return hole.get() == null;
+                        case DrawInitials:
+                            return initials.getElements().isEmpty();
+                        case TypeText:
+                            return Optional.ofNullable(text.get()).orElse("").isEmpty();
+                    }
+                    return false;
+                }, drawStep, hole, pathThin.getElements(), initials.getElements(), text));
+        stackPane.getChildren().add(drawToolBox);
     }
 
-    public final void prev() {
-        switch (drawStep.get()) {
-            case PositionHole:
-                drawShape();
-                hole.set(null);
-                break;
-            case DrawInitials:
-                if (!undoInitials()) {
-                    if (NO_HOLE) {
-                        drawShape();
-                    } else {
-                        positionHole();
-                    }
-                    initials.getElements().clear();
-                }
-                break;
-            case ReadyToCut:
-                if (NO_HOLE) {
-                    drawShape();
-                } else {
-                    drawInitials();
-                }
-                break;
-            default:
-                throw new IllegalStateException("Cannot proceed to the next drawing stage from this: " + drawStep.get());
-        }
+    @Override
+    protected void layoutChildren() {
+        super.layoutChildren();
+        drawToolBox.resize(drawToolBox.prefWidth(stackPane.getHeight()), stackPane.getHeight());        
+        System.out.println("canvas.getLayoutX() = " + canvas.getLayoutX());
+        System.out.println("drawToolBox.getWidth() = " + drawToolBox.getWidth());
     }
 
     public final boolean undoInitials() {
@@ -262,43 +255,49 @@ public class DrawPane extends BorderPane {
         return false;
     }
 
-    public final void next() {
-        switch (drawStep.get()) {
-            case PositionHole:
-                drawInitials();
-                break;
-            case DrawInitials:
-                readyToCut();
-                break;
-            default:
-                throw new IllegalStateException("Cannot proceed to the next drawing stage from this: " + drawStep.get());
-        }
-    }
 
     public final void drawShape() {
         drawStep.set(DrawStep.DrawShape);
+        drawToolBox.mode.selectToggle(drawToolBox.shape);
         canvas.setOnMousePressed(e -> startDrawing(e));
         canvas.setOnMouseDragged(e -> continueDrawing(e));
         canvas.setOnMouseReleased(e -> stopDrawing(e));
         canvas.setOnTouchPressed(e -> startDrawing(e));
         canvas.setOnTouchMoved(e -> continueDrawing(e));
         canvas.setOnTouchReleased(e -> stopDrawing(e));
-        reset();
+        title.setText("Draw shape");
+        drawToolBox.remove.setOnAction(t -> resetShape());
     }
-
+    
     public void positionHole() {
         if (NO_HOLE) {
             readyToCut();
             return;
         }
         drawStep.set(DrawStep.PositionHole);
+        drawToolBox.mode.selectToggle(drawToolBox.hole);
+        if (stackPane.getChildren().removeAll(holeCircle, holeSafeZone)) {
+            stackPane.getChildren().addAll(holeCircle, holeSafeZone);
+        }
         canvas.setOnMousePressed(e -> positionHole(e));
         canvas.setOnMouseDragged(e -> positionHole(e));
         canvas.setOnMouseReleased(null);
         canvas.setOnTouchPressed(e -> positionHole(e));
         canvas.setOnTouchMoved(e -> positionHole(e));
         canvas.setOnTouchReleased(null);
-        title.setText("Position badge holder hole");
+        title.setText("Position badge holder hole");        
+        drawToolBox.remove.setOnAction(t -> resetHole());
+    }
+
+    public void typeText() {
+        if (NO_HOLE) {
+            readyToCut();
+            return;
+        }
+        drawStep.set(DrawStep.TypeText);
+        drawToolBox.mode.selectToggle(drawToolBox.text);
+        title.setText("Type text");
+        drawToolBox.remove.setOnAction(t -> resetText());
     }
 
     private void drawInitials() {
@@ -307,8 +306,9 @@ public class DrawPane extends BorderPane {
             return;
         }
         drawStep.set(DrawStep.DrawInitials);
+        drawToolBox.mode.selectToggle(drawToolBox.initials);
         stackPane.getChildren().remove(initials);
-        stackPane.getChildren().add(stackPane.getChildren().indexOf(outline.get()), initials);
+        stackPane.getChildren().add(initials);
         canvas.setOnMousePressed(e -> startDrawingInitials(e));
         canvas.setOnMouseDragged(e -> continueDrawingInitials(e));
         canvas.setOnMouseReleased(e -> continueDrawingInitials(e));
@@ -316,6 +316,7 @@ public class DrawPane extends BorderPane {
         canvas.setOnTouchMoved(e -> continueDrawingInitials(e));
         canvas.setOnTouchReleased(e -> continueDrawingInitials(e));
         title.setText("Draw your initials");
+        drawToolBox.remove.setOnAction(t -> undoInitials());
     }
 
     public void readyToCut() {
@@ -352,7 +353,7 @@ public class DrawPane extends BorderPane {
         if (Double.isNaN(x) || Double.isNaN(y)) {
             return;
         }
-        reset();
+        resetShape();
         drawing.set(new Drawing(x, y));
     }
 
@@ -506,7 +507,7 @@ public class DrawPane extends BorderPane {
         g.getTransforms().addAll(
                 new Translate(0, -Configuration.MATERIAL_SIZE_Y),
                 new Scale(pxPerMm.get(), -pxPerMm.get(), 0, MATERIAL_SIZE_Y));
-        stackPane.getChildren().addAll(g, outlinePath);
+        stackPane.getChildren().addAll(1, Arrays.asList(g, outlinePath));
 
         positionHole();
     }
@@ -525,8 +526,12 @@ public class DrawPane extends BorderPane {
         Path path2 = SmallPolygonsCleaner.clean(path1);
         return path2;
     }
+    
+    private void resetText() {
+        getTextPane().setText("");
+    }
 
-    private void reset() {
+    private void resetShape() {
         if (outline.get() != null) {
             stackPane.getChildren().remove(outline.get());
             outline.set(null);
@@ -535,13 +540,20 @@ public class DrawPane extends BorderPane {
             stackPane.getChildren().remove(g);
             g = null;
         }
-        stackPane.getChildren().removeAll(holeCircle, holeSafeZone, errorMessage);
-        hole.set(null);
         pathThin.getElements().clear();
         pathThick.getElements().clear();
+        stackPane.getChildren().removeAll(errorMessage);
+    }
+    
+    private void resetHole() {
+        stackPane.getChildren().removeAll(holeCircle, holeSafeZone);
+        hole.set(null);
+    }
+    
+    public void reset() {
+        resetShape();
+        resetHole();
         initials.getElements().clear();
-        title.setTextFill(Color.WHITE);
-        title.setText("Draw shape");
     }
 
     public class Drawing {
@@ -604,7 +616,7 @@ public class DrawPane extends BorderPane {
                     new Translate(0, -Configuration.MATERIAL_SIZE_Y),
                     new Scale(pxPerMm.get(), -pxPerMm.get(), 0, Configuration.MATERIAL_SIZE_Y));
             pathThick.getElements().clear();
-            stackPane.getChildren().add(outlinePath);
+            stackPane.getChildren().add(1, outlinePath);
             outlinePath.setMouseTransparent(true);
             outlinePath.setManaged(false);
             outlinePath.layoutXProperty().bind(canvas.layoutXProperty());

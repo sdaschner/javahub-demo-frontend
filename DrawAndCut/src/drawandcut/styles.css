@@ -29,7 +29,7 @@
 .toggle-button:hover {
     -fx-background-color: F2F7F9;
 }
-#exitPopup {
+#exitPopup, #drawToolBox {
     -fx-padding: 8;
     -fx-spacing: 8;
     -fx-border-color: #5382A1;
@@ -41,11 +41,31 @@
     -fx-pref-width: 100;
     -fx-pref-height: 70;
 }
+#drawToolBox .button,
+#drawToolBox .toggle-button {
+    -fx-pref-width: 80;
+    -fx-pref-height: 60;
+}
 #scan {
     -fx-graphic: url("ui/icons/qr-code-scan.png");
 }
 #draw {
     -fx-graphic: url("ui/icons/draw.png");
+}
+#shape {
+    -fx-graphic: url("ui/icons/shape.png");
+}
+#initials {
+    -fx-graphic: url("ui/icons/initials.png");
+}
+#text {
+    -fx-graphic: url("ui/icons/text.png");
+}
+#hole {
+    -fx-graphic: url("ui/icons/hole.png");
+}
+#remove {
+    -fx-graphic: url("ui/icons/remove.png");
 }
 #load {
     -fx-graphic: url("ui/icons/open-file-button.png");

@@ -132,11 +132,6 @@ public class DrawAndCut extends Application {
                 controlPane.loadButton(),
                 controlPane.scanButton());
 
-        controlPane.initialsField().textProperty().addListener(
-                (observable, oldValue, newValue) ->
-                        drawPane.getTextPane().setText(newValue)
-        );
-
         controlPane.loadButton().setOnAction(t -> showLoadPane());
         controlPane.cutButton().disableProperty()
                 .bind(drawPane.outlineProperty().isNull()
@@ -212,6 +207,7 @@ public class DrawAndCut extends Application {
         });
         controlPane.drawButton().setOnAction(t -> {
             if (borderPane.getCenter() == drawPane) {
+                drawPane.reset();
                 drawPane.drawShape();
             }
             showDrawPane();
