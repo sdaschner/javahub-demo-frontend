@@ -159,4 +159,7 @@ public class ScannerPane extends BorderPane {
         return showProgress;
     }
     
+    public void setTitle(String text) {
+        title.setText(text);
+    }    
 }

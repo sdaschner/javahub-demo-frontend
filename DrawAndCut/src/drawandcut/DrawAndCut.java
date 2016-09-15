@@ -51,6 +51,9 @@ import javafx.scene.paint.Color;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import drawandcut.gcode.SurfaceEvener;
+import java.io.FileNotFoundException;
+import java.net.ConnectException;
+import java.net.NoRouteToHostException;
 import javafx.concurrent.Task;
 
 /**
@@ -209,6 +212,16 @@ public class DrawAndCut extends Application {
                     showDrawPane();
                 }
             });
+            downloadTask.setOnFailed(e -> {
+                Throwable ex = downloadTask.getException();
+                if (ex instanceof FileNotFoundException) {
+                    scannerPane.setTitle("Bad QR code");
+                } else if (ex instanceof NoRouteToHostException || ex instanceof ConnectException) {
+                    scannerPane.setTitle("No connection to server");
+                } else {
+                    scannerPane.setTitle("Load failed with " + ex.getClass().getSimpleName());
+                }
+            });
         });
         
         primaryStage.setScene(drawScene);
@@ -222,7 +235,7 @@ public class DrawAndCut extends Application {
 //        Path outline = outliner.generateOutline();
     }
     
-    private static String readUrlToString(String url) {
+    private static String readUrlToString(String url) throws IOException {
         try (
             InputStream inputStream = new URL(url).openStream();
             Scanner scanner = new Scanner(inputStream, "UTF-8").useDelimiter("\\A")
@@ -230,12 +243,10 @@ public class DrawAndCut extends Application {
             if (scanner.hasNext()) {
                 return scanner.next();
             }
-        } catch (MalformedURLException ex) {
-            Logger.getLogger(DrawAndCut.class.getName())
-                    .log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
             Logger.getLogger(DrawAndCut.class.getName())
                     .log(Level.SEVERE, null, ex);
+            throw ex;
         }
         return null;
     }
