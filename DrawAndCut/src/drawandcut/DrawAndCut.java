@@ -167,7 +167,12 @@ public class DrawAndCut extends Application {
                 exitPopup.reboot.setOnAction(t -> reboot());
                 exitPopup.poweroff.setOnAction(t -> poweroff());
             }
-            exitPopup.setOnHidden(t -> controlPane.exitButton().setSelected(false));
+            exitPopup.setOnHidden(t -> {                
+                controlPane.exitButton().setSelected(false);
+                if (borderPane.getCenter() == scannerPane) {
+                    scannerPane.start();
+                }
+            });
             Bounds b = controlPane.exitButton().localToScreen(controlPane.exitButton().getBoundsInLocal());
             exitPopup.show(primaryStage, 
                     b.getMaxX() + PADDING, 
@@ -194,11 +199,7 @@ public class DrawAndCut extends Application {
 
 //        controlPane.scanButton().setDisable(Configuration.DISABLE_CAMERA);
         controlPane.scanButton().setOnAction(t -> {
-            if (borderPane.getCenter() == scannerPane) {
-                showDrawPane();
-            } else {
-                showScannerPane();
-            }
+            showScannerPane();
         });
         controlPane.drawButton().setOnAction(t -> {
             if (borderPane.getCenter() == drawPane) {
@@ -306,6 +307,7 @@ public class DrawAndCut extends Application {
         borderPane.setCenter(scannerPane);
         scannerPane.start();
         scannerPane.requestFocus();
+        controlPane.scanButton().setSelected(true);
     }
 
     private void showLoadPane() {
@@ -315,6 +317,7 @@ public class DrawAndCut extends Application {
         }
         borderPane.setCenter(shapesPane);
         shapesPane.requestFocus();
+        controlPane.loadButton().setSelected(true);
     }
 
 }

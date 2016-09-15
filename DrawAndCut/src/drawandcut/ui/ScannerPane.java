@@ -56,6 +56,7 @@ public class ScannerPane extends BorderPane {
     private boolean startAfterLayout = false;
     private Bounds previewBounds = null;
     private final BooleanProperty showProgress = new SimpleBooleanProperty(false);
+    private boolean running = false;
     
     public ScannerPane() {
         
@@ -97,7 +98,7 @@ public class ScannerPane extends BorderPane {
         setTop(title);
     }
 
-    public void start() {
+    public void start() {        
         title.setText("Scan QR code");
         counter = 0;
         System.out.println("ScannerPane.start()");
@@ -124,9 +125,14 @@ public class ScannerPane extends BorderPane {
     
     private void doStart() {
         startAfterLayout = false;
+        if (running) {
+            return;
+        }
+        running = true;
         System.out.println("ScannerPane.doStart()");
         setPreviewBounds();
         codeScanner.startTakingStillImages(previewBounds.getWidth(), previewBounds.getHeight(), (image, code) -> {
+            running = false;
             System.out.println((counter++) + ". image = " + image);
             previewImage.setImage(image);
             if (onRead != null) {
@@ -149,6 +155,7 @@ public class ScannerPane extends BorderPane {
     public void stop() {
         System.out.println("ScannerPane.stop()");
         codeScanner.stopTakingStillImages();
+        running = false;
     }
     
     public void setOnRead(Consumer<String> onRead) {
