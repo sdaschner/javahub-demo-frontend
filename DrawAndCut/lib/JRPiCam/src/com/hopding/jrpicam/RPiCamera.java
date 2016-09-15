@@ -61,6 +61,14 @@ import java.util.logging.Logger;
  * @author Andrew Dillon
  */
 public class RPiCamera {
+    
+        public static final boolean DEBUG = Boolean.getBoolean("debug");
+        
+        public static void log(String msg) {
+            if (DEBUG) {
+                System.out.println(msg);
+            }
+        }
 	
         String prevCommand;
         String saveDir;
@@ -227,7 +235,7 @@ public class RPiCamera {
 			}
 		}
 		prevCommand = command.toString();
-                System.out.println("command = " + command);
+                log("command = " + command);
 		pb = new ProcessBuilder(command).inheritIO().redirectOutput(
                         ProcessBuilder.Redirect.PIPE);
 		
@@ -283,7 +291,7 @@ public class RPiCamera {
                 }
             }
             prevCommand = command.toString();
-            System.out.println("RPiCamera command = " + command);            
+            log("RPiCamera command = " + command);            
             pb = new ProcessBuilder(command).redirectErrorStream(true);
             ProcessBuilder processBuilder = pb;
             
@@ -292,7 +300,7 @@ public class RPiCamera {
 
                     p = processBuilder.start();
                     int pid = getRaspistillPid();
-                    System.out.println("pid = " + pid);
+                    log("pid = " + pid);
                     int count = 0;
                     
                     ImageIO.setUseCache(false);
@@ -356,7 +364,7 @@ public class RPiCamera {
                         errorConsumer.accept(t);
                     }
                 } finally {
-                    System.out.println("Camera thread exited");
+                    log("Camera thread exited");
                 }
             }, "RPiCamera.startTakingStillImages").start();
         }
@@ -367,7 +375,7 @@ public class RPiCamera {
                 if (line == null) {
                     throw new IllegalStateException("Failed to initialize raspistill");
                 }
-                System.out.println("raspistill: " + line);
+                log("raspistill: " + line);
                 if (line.contains("Waiting for SIGUSR1 to initiate capture")) {
                     break;
                 }
