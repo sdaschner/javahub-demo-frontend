@@ -262,7 +262,7 @@ public class DrawPane extends BorderPane {
                 () -> {
                     switch (drawStep.get()) {
                         case DrawShape:
-                            return pathThin.getElements().isEmpty();
+                            return outline.get() == null;
                         case PositionHole:
                             return hole.get() == null;
                         case DrawInitials:
@@ -271,7 +271,7 @@ public class DrawPane extends BorderPane {
                             return Optional.ofNullable(text.get()).orElse("").isEmpty();
                     }
                     return false;
-                }, drawStep, hole, pathThin.getElements(), initials.getElements(), text));
+                }, drawStep, hole, outline, initials.getElements(), text));
         stackPane.getChildren().add(drawToolBox);
     }
 
