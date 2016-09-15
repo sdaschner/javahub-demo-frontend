@@ -26,13 +26,17 @@ package drawandcut.ui;
 import drawandcut.Configuration;
 import drawandcut.scanner.QRCodeScanner;
 import java.util.function.Consumer;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.geometry.Bounds;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 
@@ -45,16 +49,32 @@ public class ScannerPane extends BorderPane {
     private final QRCodeScanner codeScanner = new QRCodeScanner();
     private Consumer<String> onRead;
     private int counter;
-    private Node preview;
+    private final Label title;
+    private final Pane preview = new StackPane();
+    private final ImageView previewImage;
+    private final ProgressIndicator progress = new ProgressIndicator(ProgressIndicator.INDETERMINATE_PROGRESS);
     private boolean startAfterLayout = false;
     private Bounds previewBounds = null;
+    private final BooleanProperty showProgress = new SimpleBooleanProperty(false);
     
     public ScannerPane() {
         
-        Label title = new Label("Scan QR code");
+        title = new Label("Scan QR code");
         title.setTextFill(Color.WHITE);
         title.setFont(Font.font(25));
         BorderPane.setAlignment(title, Pos.CENTER);
+        
+        showProgress.addListener(t -> {
+            if (showProgress.get()) {
+                title.setText("Loading...");
+            }
+        });
+        
+        previewImage = new ImageView();
+        previewImage.setManaged(false);
+        previewImage.fitWidthProperty().bind(preview.widthProperty());
+        previewImage.fitHeightProperty().bind(preview.heightProperty());
+        preview.getChildren().add(previewImage);
         
         if (Configuration.DISABLE_CAMERA) {
             Button scan = new Button("Camera preview will appear here");
@@ -64,10 +84,13 @@ public class ScannerPane extends BorderPane {
                     onRead.accept("01a79a5a-df29-4c21-9fb8-770406a30509");
                 }
             });
-            preview = scan;
-        } else {
-            preview = new Pane();
+            preview.getChildren().add(scan);
         }
+        
+        progress.setMaxSize(100, 100);
+        progress.visibleProperty().bind(showProgress);
+        preview.getChildren().add(progress);
+        
         setCenter(preview);
         
         setId("scannerPane");
@@ -75,6 +98,7 @@ public class ScannerPane extends BorderPane {
     }
 
     public void start() {
+        title.setText("Scan QR code");
         counter = 0;
         System.out.println("ScannerPane.start()");
         if (previewBounds == null) {
@@ -85,6 +109,7 @@ public class ScannerPane extends BorderPane {
     }
 
     public ScannerPane(Consumer<String> onRead, int counter) {
+        this();
         this.onRead = onRead;
         this.counter = counter;
     }
@@ -103,6 +128,7 @@ public class ScannerPane extends BorderPane {
         setPreviewBounds();
         codeScanner.startTakingStillImages(previewBounds.getWidth(), previewBounds.getHeight(), (image, code) -> {
             System.out.println((counter++) + ". image = " + image);
+            previewImage.setImage(image);
             if (onRead != null) {
                 onRead.accept(code);
             }
@@ -128,4 +154,9 @@ public class ScannerPane extends BorderPane {
     public void setOnRead(Consumer<String> onRead) {
         this.onRead = onRead;
     }
+
+    public BooleanProperty showProgress() {
+        return showProgress;
+    }
+    
 }

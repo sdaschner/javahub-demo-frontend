@@ -51,6 +51,7 @@ import javafx.scene.paint.Color;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import drawandcut.gcode.SurfaceEvener;
+import javafx.concurrent.Task;
 
 /**
  *
@@ -65,6 +66,7 @@ public class DrawAndCut extends Application {
     private ShapesPane shapesPane;
     private DrawPane drawPane;
     private BorderPane borderPane;
+    private Task<String> downloadTask;
 
     /**
      * @param args the command line arguments
@@ -192,10 +194,23 @@ public class DrawAndCut extends Application {
         controlPane.drawButton().setSelected(true);
         
         scannerPane.setOnRead(uuid -> {
-            drawPane.importSVG(readUrlToString(CLOUD_BASE_URL + uuid), MATERIAL_SIZE_X, DrawPane.ImportSource.WEBAPP);
-            showDrawPane();
+            downloadTask = new Task<String>() {
+                        @Override
+                        protected String call() throws Exception {
+                            return readUrlToString(CLOUD_BASE_URL + uuid);
+                        }
+                    };
+            new Thread(downloadTask, "SVG path downloader").start();
+            scannerPane.showProgress().bind(downloadTask.runningProperty());
+            downloadTask.valueProperty().addListener(t -> {
+                String svg = downloadTask.getValue();
+                if (svg != null) {
+                    drawPane.importSVG(svg, MATERIAL_SIZE_X, DrawPane.ImportSource.WEBAPP);
+                    showDrawPane();
+                }
+            });
         });
-
+        
         primaryStage.setScene(drawScene);
         primaryStage.show();
         primaryStage.setOnCloseRequest(e -> System.exit(0));
@@ -227,6 +242,9 @@ public class DrawAndCut extends Application {
     
     private void showDrawPane() {
         scannerPane.stop();
+        if (downloadTask != null) {
+            downloadTask.cancel();
+        }
         borderPane.setCenter(drawPane);
         drawPane.requestFocus();
         controlPane.drawButton().setSelected(true);
@@ -240,6 +258,9 @@ public class DrawAndCut extends Application {
 
     private void showLoadPane() {
         scannerPane.stop();
+        if (downloadTask != null) {
+            downloadTask.cancel();
+        }
         borderPane.setCenter(shapesPane);
         shapesPane.requestFocus();
     }
