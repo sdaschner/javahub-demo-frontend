@@ -7,7 +7,9 @@
 #drawPane, #shapesPane, #scannerPane {
     -fx-background-color: #5382A1;
 }
-
+#drawPane {
+    -fx-padding: 3 8 8 85;
+}
 .svg-path {
     -fx-fill: #7999AC;
 }
