@@ -90,9 +90,9 @@ public class DrawPane extends BorderPane {
 
     private enum DrawStep {DrawShape, PositionHole, TypeText, DrawInitials, ReadyToCut}
     private enum SortOrder { 
-        TEXT_FIELD, CANVAS, INTERIOR, THIN, 
+        TEXT_FIELD, CANVAS, INTERIOR, THICK, THIN, 
         TEXT, INITIALS, 
-        OUTLINE, HOLE, THICK, THIN_DRAW_SHAPE,
+        OUTLINE, HOLE, THICK_DRAW_SHAPE, THIN_DRAW_SHAPE,
         HOLE_POSITION_HOLE, HOLE_SAFE_ZONE,
         DRAW_TOOL_BOX,
         ERROR_MESSAGE
@@ -699,6 +699,9 @@ public class DrawPane extends BorderPane {
         pathThin.setUserData(drawStep.get() == DrawStep.DrawShape 
                 ? SortOrder.THIN_DRAW_SHAPE.ordinal()
                 : SortOrder.THIN.ordinal());
+        pathThick.setUserData(drawStep.get() == DrawStep.DrawShape 
+                ? SortOrder.THICK_DRAW_SHAPE.ordinal()
+                : SortOrder.THICK.ordinal());
         holeCircle.setUserData(drawStep.get() == DrawStep.PositionHole 
                 ? SortOrder.HOLE_POSITION_HOLE.ordinal()
                 : SortOrder.HOLE.ordinal());
