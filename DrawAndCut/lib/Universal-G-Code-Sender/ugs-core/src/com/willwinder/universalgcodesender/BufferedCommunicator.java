@@ -38,7 +38,7 @@ public abstract class BufferedCommunicator extends AbstractCommunicator {// exte
     private LinkedBlockingDeque<String> activeStringList;  // Currently running commands
     private int sentBufferSize = 0;
     
-    private Boolean singleStepModeEnabled = false;
+    private boolean singleStepModeEnabled = false;
     
     //abstract public String getLineTerminator();
     abstract public int getBufferSize();
@@ -89,11 +89,15 @@ public abstract class BufferedCommunicator extends AbstractCommunicator {// exte
     }
     */
     
-    /** File Stream Methods. **/
+    /* File Stream Methods. */
     
     @Override
     public boolean areActiveCommands() {
-        return (this.activeStringList.size() > 0);
+        return this.activeStringList.size() > 0;
+    }
+
+    public LinkedBlockingDeque<String> getActiveStringList() {
+        return activeStringList;
     }
     
     // Helper for determining if commands should be throttled.
@@ -197,8 +201,6 @@ public abstract class BufferedCommunicator extends AbstractCommunicator {// exte
      */
     @Override
     public void responseMessage(String response) {
-        // Send this information back up to the Controller.
-        dispatchListenerEvents(RAW_RESPONSE, this.commRawResponseListener, response);
 
         // Keep the data flow going in case of an "ok/error".
         if (processedCommand(response)) {
@@ -207,10 +209,17 @@ public abstract class BufferedCommunicator extends AbstractCommunicator {// exte
                 String commandString = this.activeStringList.pop();
                 this.sentBufferSize -= commandString.length();
 
+                // Send this information back up to the Controller.
+                dispatchListenerEvents(RAW_RESPONSE, this.commRawResponseListener, response);
+                
                 if (this.sendPaused == false) {
                     this.streamCommands();
                 }
             }
+        } else {
+            // Send this information back up to the Controller.
+            dispatchListenerEvents(RAW_RESPONSE, this.commRawResponseListener, response);
+            
         }
     }
 

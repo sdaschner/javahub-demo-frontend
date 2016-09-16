@@ -89,10 +89,12 @@ public class Cutter {
         ready.set(false);
         try {
             grblController.cancelSend();
-            grblController.softReset();
+            grblController.issueSoftReset();
             grblController.closeCommPort();
             grblController = null;
             initState = InitSequenceState.NOT_CONNECTED;
+            machineCoord.set(0, 0, 0);
+            workCoord.set(0, 0, 0);
 
             toConnect.run();
         } catch (Exception ex) {
@@ -213,8 +215,9 @@ public class Cutter {
                 initState = InitSequenceState.CONNECTED;
             } else if (!verbose && msg.contains("['$H'|'$X' to unlock]") && initState == InitSequenceState.CONNECTED) {
                 performHoming();
-            } else if (!verbose && msg.contains("error")) {
-                throw new IllegalStateException("Error happened");
+            } else if (msg.contains("error") || msg.contains("Error")) {
+                new Exception("The message contains error: " + msg).printStackTrace();
+                recoverFromFailure();
             }
         }
         
@@ -251,6 +254,9 @@ public class Cutter {
         public void commandQueued(GcodeCommand command) {
             log("ControllerListener.commandQueued command = "
                     + command);
+            if (command == null) {
+                new Exception("Command is null!").printStackTrace();
+            }
         }
 
     }

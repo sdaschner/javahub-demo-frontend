@@ -31,6 +31,7 @@ import java.awt.event.ActionListener;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javafx.application.Platform;
 import javax.swing.Timer;
 import javax.vecmath.Point3d;
 
@@ -343,25 +344,22 @@ public class GrblController extends AbstractController {
         ActionListener actionListener = new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                java.awt.EventQueue.invokeLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            if (outstandingPolls == 0) {
-                                outstandingPolls++;
-                                comm.sendByteImmediately(GrblUtils.GRBL_STATUS_COMMAND);
-                            } else {
-                                // If a poll is somehow lost after 20 intervals,
-                                // reset for sending another.
-                                outstandingPolls++;
-                                if (outstandingPolls >= 20) {
-                                    outstandingPolls = 0;
-                                }
+                Platform.runLater(() -> {
+                    try {
+                        if (outstandingPolls == 0) {
+                            outstandingPolls++;
+                            comm.sendByteImmediately(GrblUtils.GRBL_STATUS_COMMAND);
+                        } else {
+                            // If a poll is somehow lost after 20 intervals,
+                            // reset for sending another.
+                            outstandingPolls++;
+                            if (outstandingPolls >= 20) {
+                                outstandingPolls = 0;
                             }
-                        } catch (Exception ex) {
-                            messageForConsole(Localization.getString("controller.exception.sendingstatus")
-                                    + ": " + ex.getMessage() + "\n");
                         }
+                    } catch (Exception ex) {
+                        messageForConsole(Localization.getString("controller.exception.sendingstatus")
+                                + ": " + ex.getMessage() + "\n");
                     }
                 });
                 
