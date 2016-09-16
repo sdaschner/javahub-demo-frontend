@@ -85,6 +85,22 @@ public class Cutter {
     private final String[] COORDINATE_RESET = { COORDINATE_RESET_TEMPLATE };
     private double prbZ = Double.NaN; // Tool measurement Z
 
+    private void recoverFromFailure() {
+        ready.set(false);
+        try {
+            grblController.cancelSend();
+            grblController.softReset();
+            grblController.closeCommPort();
+            grblController = null;
+            initState = InitSequenceState.NOT_CONNECTED;
+
+            toConnect.run();
+        } catch (Exception ex) {
+            Logger.getLogger(Cutter.class.getName())
+                    .log(Level.SEVERE, null, ex);
+        }
+    }
+
     private class CutterListener implements ControllerListener {
 
         @Override
@@ -225,22 +241,6 @@ public class Cutter {
             }
         }
         
-        private void recoverFromFailure() {
-            ready.set(false);
-            try {
-                grblController.cancelSend();
-                grblController.softReset();
-                grblController.closeCommPort();
-                grblController = null;
-                initState = InitSequenceState.NOT_CONNECTED;
-                
-                toConnect.run();
-            } catch (Exception ex) {
-                Logger.getLogger(Cutter.class.getName())
-                        .log(Level.SEVERE, null, ex);
-            }
-        }
-
         @Override
         public void postProcessData(int numRows) {
             log("ControllerListener.postProcessData numRows = "
@@ -272,6 +272,7 @@ public class Cutter {
             grblController.beginStreaming();
         } catch (Exception ex) {
             Logger.getLogger(Cutter.class.getName()).log(Level.SEVERE, null, ex);
+            recoverFromFailure();
         }
     }
 
