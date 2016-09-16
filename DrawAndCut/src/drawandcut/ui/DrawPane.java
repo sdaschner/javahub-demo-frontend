@@ -67,9 +67,10 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.PathElement;
 import javafx.scene.text.Font;
 import static drawandcut.Configuration.*;
+import drawandcut.Cut;
 import java.util.Comparator;
 import java.util.Optional;
-import java.util.function.UnaryOperator;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -122,6 +123,7 @@ public class DrawPane extends BorderPane {
     private double margin;
     private final ObjectProperty<DrawStep> drawStep = new SimpleObjectProperty<>(DrawStep.DrawShape);
     private final TextField textField = new TextField();
+    private Shape interior;
 //    private final Outliner outliner = new OutlinerJava2D();
 
 
@@ -157,26 +159,22 @@ public class DrawPane extends BorderPane {
             textPane.setText(text.get());
         });
 
-        textField.setTextFormatter(new TextFormatter(new UnaryOperator<TextFormatter.Change>() {
-            @Override
-            public TextFormatter.Change apply(TextFormatter.Change t) {
-                if (t.isContentChange()) {
-                    String newText = t.getControlNewText();
-                    int newLength = newText.length();
-                    if (newLength > MAX_TEXT_LENGTH) {
-                        int extraLength = newLength - MAX_TEXT_LENGTH;
-                        int caretMove = t.getCaretPosition() - t.getControlCaretPosition();
-                        int anchorMove = t.getAnchor() - t.getControlAnchor();
-                        t.setText(t.getText().substring(0, t.getText().length() - extraLength));                    
-                        t.selectRange(
-                                t.getControlAnchor() + anchorMove - extraLength, 
-                                t.getControlCaretPosition() + caretMove - extraLength);
-                    }
-                    return t;
-                } else {
-                    return null;
+        textField.setTextFormatter(new TextFormatter<>((TextFormatter.Change t) -> {
+            if (t.isContentChange()) {
+                String newText = t.getControlNewText();
+                int newLength = newText.length();
+                if (newLength > MAX_TEXT_LENGTH) {
+                    int extraLength = newLength - MAX_TEXT_LENGTH;
+                    int caretMove = t.getCaretPosition() - t.getControlCaretPosition();
+                    int anchorMove = t.getAnchor() - t.getControlAnchor();
+                    t.setText(t.getText().substring(0, t.getText().length() - extraLength));
+                    t.selectRange(
+                            t.getControlAnchor() + anchorMove - extraLength,
+                            t.getControlCaretPosition() + caretMove - extraLength);
                 }
             }
+            t.selectRange(t.getControlNewText().length(), t.getControlNewText().length());
+            return t;
         }));
         textField.textProperty().bindBidirectional(text);
         textField.setMaxWidth(100);
@@ -387,6 +385,14 @@ public class DrawPane extends BorderPane {
     public void readyToCut() {
         drawStep.set(DrawStep.ReadyToCut);
         title.setText("Ready to cut");
+        drawToolBox.mode.selectToggle(null);
+        canvas.setOnMousePressed(null);
+        canvas.setOnMouseDragged(null);
+        canvas.setOnMouseReleased(null);
+        canvas.setOnTouchPressed(null);
+        canvas.setOnTouchMoved(null);
+        canvas.setOnTouchReleased(null);
+        reorderNodes();
     }
 
     private double getX(InputEvent e) {
@@ -443,7 +449,7 @@ public class DrawPane extends BorderPane {
         }
         try {
             drawing.get().stop(x, y);
-            if (NO_HOLE) {
+            if (NO_HOLE || hole.get() != null) {
                 readyToCut();
             } else {
                 positionHole();
@@ -483,7 +489,6 @@ public class DrawPane extends BorderPane {
         ObservableList<PathElement> ie = initials.getElements();
         if (!ie.isEmpty() && ie.get(ie.size() - 1) instanceof MoveTo) {
             ie.remove(ie.size() - 1);
-            System.err.println("Removing MoveTo without following LineTo");
         }
         ie.add(new MoveTo(clampX(x), clampY(y)));
     }
@@ -505,7 +510,7 @@ public class DrawPane extends BorderPane {
         }
     }
     
-    private final static boolean lineToEquals(LineTo lineTo, Object obj) {
+    private static boolean lineToEquals(LineTo lineTo, Object obj) {
         if (!(obj instanceof LineTo)) {
             return false;
         }
@@ -513,11 +518,38 @@ public class DrawPane extends BorderPane {
         return lineTo.getX() == aLineTo.getX() && lineTo.getY() == aLineTo.getY();
     }
 
+    public void importCut(Cut cut) {
+        drawing.set(new Drawing(0, 0));
+        reset();
+        outline.set(new Path(cut.getOutline().getElements()));
+        configOutline();
+        text.set(cut.getText());
+        initials.getElements().setAll(cut.getInitials().getElements());
+        hole.set(cut.getHole());
+        holeCircle.setCenterX(unconvertX(cut.getHole().getX()));
+        holeCircle.setCenterY(unconvertY(cut.getHole().getY()));
+        interior = new Path(cut.getInterior().getElements());
+        interior.setStroke(null);
+        interior.setFill(SHAPE_INTERIOR_COLOR);
+        Path shownInterior = new Path(cut.getInterior().getElements());
+        importedShapeInterior = new Group(shownInterior);
+        shownInterior.setStroke(null);
+        shownInterior.setFill(SHAPE_INTERIOR_COLOR);
+        importedShapeInterior.setMouseTransparent(true);
+        importedShapeInterior.setManaged(false);
+        importedShapeInterior.layoutXProperty().bind(canvas.layoutXProperty());
+        importedShapeInterior.layoutYProperty().bind(canvas.layoutYProperty());
+        importedShapeInterior.setUserData(SortOrder.INTERIOR.ordinal());
+        stackPane.getChildren().addAll(holeCircle, holeSafeZone, importedShapeInterior);
+        readyToCut();
+    }
+
     public static enum ImportSource {MODEL, WEBAPP}
 
-    ;
-
-    public void importSVG(String svg, double size, ImportSource importSource) {
+    public void importSVG(String svg, double size, ImportSource importSource) {        
+        drawing.set(new Drawing(0, 0)); // TODO: Fix this workaround to indicate there is a drawing
+        reset();
+        
         SVGPath svgPath = new SVGPath();
         svgPath.setContent(svg);
         svgPath.setFillRule(FillRule.EVEN_ODD);
@@ -533,11 +565,6 @@ public class DrawPane extends BorderPane {
                             -b.getMinY() * -scale + (MATERIAL_SIZE_Y - b.getHeight() * -scale) / 2),
                     new Scale(scale, -scale));
         }
-//        System.out.println("before svgPath.getBoundsInLocal() = " + svgPath.getBoundsInLocal());
-//        System.out.println("after svgPath.getBoundsInParent() = " + svgPath.getBoundsInParent());
-
-        drawing.set(new Drawing(0, 0)); // TODO: Fix this workaround to indicate there is a drawing
-        reset();
         Path path = (Path) Shape.union(svgPath, new Rectangle(0, 0));
         printPathCount(path, "path");
         Path simplifiedPath = simplify(path);
@@ -556,33 +583,21 @@ public class DrawPane extends BorderPane {
             default:
                 throw new IllegalStateException("Unexpected import source: " + importSource);
         }
-        outlinePath.setStrokeWidth(Configuration.TOOL_DIAMETER);
-        outlinePath.setStroke(CUT_COLOR);
-        outlinePath.setStrokeLineJoin(StrokeLineJoin.ROUND);
-        outlinePath.setStrokeLineCap(StrokeLineCap.ROUND);
-        outlinePath.getTransforms().addAll(
-                new Translate(0, -Configuration.MATERIAL_SIZE_Y),
-                new Scale(pxPerMm.get(), -pxPerMm.get(), 0, MATERIAL_SIZE_Y));
-        outlinePath.setMouseTransparent(true);
-        outlinePath.setManaged(false);
-        outlinePath.layoutXProperty().bind(canvas.layoutXProperty());
-        outlinePath.layoutYProperty().bind(canvas.layoutYProperty());
-        log("before outline.getBoundsInLocal() = " + outlinePath.getBoundsInLocal());
-        log("after outline.getBoundsInParent() = " + outlinePath.getBoundsInParent());
-        outlinePath.setUserData(SortOrder.OUTLINE.ordinal());
         outline.set(outlinePath);
+        configOutline();
 
         importedShapeInterior = new Group(svgPath);
         svgPath.setFill(SHAPE_INTERIOR_COLOR);
         importedShapeInterior.setMouseTransparent(true);
         importedShapeInterior.setManaged(false);
-        importedShapeInterior.layoutXProperty().bind(canvas.layoutXProperty());
-        importedShapeInterior.layoutYProperty().bind(canvas.layoutYProperty());
         importedShapeInterior.getTransforms().addAll(
                 new Translate(0, -Configuration.MATERIAL_SIZE_Y),
                 new Scale(pxPerMm.get(), -pxPerMm.get(), 0, MATERIAL_SIZE_Y));
         importedShapeInterior.setUserData(SortOrder.INTERIOR.ordinal());
-        stackPane.getChildren().addAll(importedShapeInterior, outlinePath);
+        interior = Shape.union(svgPath, new Rectangle(0, 0));
+        importedShapeInterior.layoutXProperty().bind(canvas.layoutXProperty());
+        importedShapeInterior.layoutYProperty().bind(canvas.layoutYProperty());
+        stackPane.getChildren().addAll(importedShapeInterior);
 
         positionHole();
     }
@@ -616,6 +631,7 @@ public class DrawPane extends BorderPane {
             stackPane.getChildren().remove(importedShapeInterior);
             importedShapeInterior = null;
         }
+        interior = null;
         pathThin.getElements().clear();
         pathThick.getElements().clear();
         stackPane.getChildren().removeAll(errorMessage);
@@ -676,6 +692,16 @@ public class DrawPane extends BorderPane {
             //        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(80, 25), new LineTo(100, 50), new LineTo(0, 50), new ClosePath());
             //        Outliner outliner = new Outliner(path);
             Path outlinePath = outliner.generateOutline(drawing.get().getPath());
+            pathThick.getElements().clear();
+            outline.set(outlinePath);
+            configOutline();
+            reorderNodes();
+        }
+    }
+    
+    private void configOutline() {
+        Path outlinePath = outline.get();
+        if (outlinePath != null) {
             outlinePath.setStrokeWidth(Configuration.TOOL_DIAMETER);
             outlinePath.setStroke(CUT_COLOR);
             outlinePath.setStrokeLineJoin(StrokeLineJoin.ROUND);
@@ -683,15 +709,12 @@ public class DrawPane extends BorderPane {
             outlinePath.getTransforms().addAll(
                     new Translate(0, -Configuration.MATERIAL_SIZE_Y),
                     new Scale(pxPerMm.get(), -pxPerMm.get(), 0, Configuration.MATERIAL_SIZE_Y));
-            pathThick.getElements().clear();
             outlinePath.setMouseTransparent(true);
             outlinePath.setManaged(false);
             outlinePath.layoutXProperty().bind(canvas.layoutXProperty());
             outlinePath.layoutYProperty().bind(canvas.layoutYProperty());
             outlinePath.setUserData(SortOrder.OUTLINE.ordinal());
-            outline.set(outlinePath);
             stackPane.getChildren().add(outlinePath);
-            reorderNodes();
         }
     }
     
@@ -730,6 +753,14 @@ public class DrawPane extends BorderPane {
         return Configuration.MATERIAL_SIZE_Y - y / pxPerMm.get();
     }
 
+    private double unconvertX(double x) {
+        return x * pxPerMm.get();
+    }
+
+    private double unconvertY(double y) {
+        return (Configuration.MATERIAL_SIZE_Y - y) * pxPerMm.get();
+    }
+
     private void showErrorMessage(Exception ex) {
         errorMessage.setText(ex.getMessage());
         errorMessage.resize(canvas.getWidth(), canvas.getHeight());
@@ -765,18 +796,50 @@ public class DrawPane extends BorderPane {
             } else {
                 throw new IllegalStateException("Unexpected path element: " + pathElement);
             }
-        }), textInitials.getElements().stream().map(pathElement -> {
+        }), textInitials.getElements().stream()
+                .map(new PathElementMapper(
+                        x -> convertX(x - dx), 
+                        y -> convertY(y - dy)
+                )))
+                .collect(Collectors.toList()));
+    }
+    
+    public static class PathElementMapper implements Function<PathElement, PathElement> {
+        
+        private final Function<Double, Double> convertX;
+        private final Function<Double, Double> convertY;
+
+        public PathElementMapper(Function<Double, Double> convertX,
+                Function<Double, Double> convertY) {
+            this.convertX = convertX;
+            this.convertY = convertY;
+        }
+
+        @Override
+        public PathElement apply(PathElement pathElement) {
             if (pathElement instanceof MoveTo) {
                 MoveTo mt = (MoveTo) pathElement;
-                return new MoveTo(convertX(mt.getX() - dx), convertY(mt.getY() - dy));
+                return new MoveTo(convertX.apply(mt.getX()), convertY.apply(mt.getY()));
             } else if (pathElement instanceof LineTo) {
                 LineTo mt = (LineTo) pathElement;
-                return new LineTo(convertX(mt.getX() - dx), convertY(mt.getY() - dy));
+                return new LineTo(convertX.apply(mt.getX()), convertY.apply(mt.getY()));
             } else if (pathElement instanceof ClosePath) {
                 return pathElement;
             } else {
                 throw new IllegalStateException("Unexpected path element: " + pathElement);
             }
-        })).collect(Collectors.toList()));
+        }
+    }
+    
+    public Cut getCut() {
+        if (interior == null) {
+            Path thinCopy = new Path(pathThin.getElements());
+            thinCopy.setStrokeWidth(pathThin.getStrokeWidth());
+            thinCopy.setStrokeLineCap(pathThin.getStrokeLineCap());
+            thinCopy.setStrokeLineJoin(pathThin.getStrokeLineJoin());
+            interior = thinCopy;
+        }
+        Path pathInterior = (Path) Shape.union(interior, new Rectangle(0, 0));
+        return new Cut(outline.get(), pathInterior, hole.get(), text.get(), initials);
     }
 }

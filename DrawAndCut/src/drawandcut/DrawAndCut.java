@@ -112,9 +112,14 @@ public class DrawAndCut extends Application {
         borderPane.setCenter(drawPane);
 
         shapesPane = new ShapesPane(shapes);
-        shapesPane.setOnAction(key -> {
-            Shapes.Shape shape = shapes.get().get(key);
-            drawPane.importSVG(shape.getSvg(), shape.getSize(), DrawPane.ImportSource.MODEL);
+        shapesPane.setOnAction(shapeOrCut -> {
+            if (shapeOrCut instanceof Shapes.Shape) {
+                Shapes.Shape shape = (Shapes.Shape) shapeOrCut;
+                drawPane.importSVG(shape.getSvg(), shape.getSize(), DrawPane.ImportSource.MODEL);
+            } else {
+                Cut cut = (Cut) shapeOrCut;
+                drawPane.importCut(cut);
+            }
             showDrawPane();
         });
 
@@ -143,6 +148,7 @@ public class DrawAndCut extends Application {
                     drawPane.holeProperty().get(),
                     drawPane.getInitials(),
                     RPM, FEED, DOC, PLUNGE_FEED).getOutput();
+            shapesPane.addCut(drawPane.getCut());
 //            System.out.println("Program:");
 //            for(String line : output) {
 //                System.out.println(line);
