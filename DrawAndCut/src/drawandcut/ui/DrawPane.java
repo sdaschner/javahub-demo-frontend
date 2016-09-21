@@ -29,29 +29,18 @@ import drawandcut.path.OutlinerEsri;
 import drawandcut.path.PathConversions;
 import drawandcut.path.SmallPolygonsCleaner;
 import javafx.beans.binding.Bindings;
-import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
-import javafx.geometry.Point2D;
-import javafx.geometry.Pos;
-import javafx.scene.Group;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.input.InputEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.TouchEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.CornerRadii;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
 import javafx.scene.shape.ClosePath;
 import javafx.scene.shape.FillRule;
 import javafx.scene.shape.LineTo;
@@ -62,14 +51,33 @@ import javafx.scene.shape.SVGPath;
 import javafx.scene.shape.Shape;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
-import javafx.scene.text.Font;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
-
 import java.util.stream.Collectors;
-
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.collections.ObservableList;
+import javafx.geometry.Bounds;
+import javafx.geometry.Point2D;
+import javafx.geometry.Pos;
+import javafx.scene.Group;
+import javafx.scene.control.Label;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.PathElement;
+import javafx.scene.text.Font;
 import static drawandcut.Configuration.*;
+import drawandcut.Cut;
+import java.util.Comparator;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import javafx.geometry.BoundingBox;
+import javafx.scene.Node;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 
 /**
  * @author akouznet
@@ -81,14 +89,25 @@ public class DrawPane extends BorderPane {
         return textPane;
     }
 
-    private enum DrawStep {DrawShape, PositionHole, DrawInitials, ReadyToCut}
+    private enum DrawStep {DrawShape, PositionHole, TypeText, DrawInitials, ReadyToCut}
+    private enum SortOrder { 
+        TEXT_FIELD, CANVAS, INTERIOR, THICK, THIN, 
+        TEXT, INITIALS, 
+        OUTLINE, HOLE, THICK_DRAW_SHAPE, THIN_DRAW_SHAPE,
+        HOLE_POSITION_HOLE, HOLE_SAFE_ZONE,
+        DRAW_TOOL_BOX,
+        ERROR_MESSAGE
+    }
 
     //    private static final Color CUT_COLOR = BACKGROUND_COLOR;
     private static final Color CUT_COLOR = Color.BLACK;
+    private static final Color SHAPE_INTERIOR_COLOR = Color.web("FF8080");
+    private static final Color CARVE_COLOR = Color.web("7999AC");
     private final Pane canvas = new Pane();
     private final Path pathThin = new Path();
     private final Path pathThick = new Path();
     private final Path initials = new Path();
+    private final DrawToolBox drawToolBox = new DrawToolBox();
     private ObjectProperty<Drawing> drawing = new SimpleObjectProperty<>();
     private final DoubleProperty pxPerMm = new SimpleDoubleProperty(1);
     private final StackPane stackPane;
@@ -96,14 +115,15 @@ public class DrawPane extends BorderPane {
     private final Label errorMessage = new Label();
     private ObjectProperty<Path> outline = new SimpleObjectProperty<>();
     private ObjectProperty<Point2D> hole = new SimpleObjectProperty<>();
-    private Group g;
+    private Group importedShapeInterior;
     private final Circle holeCircle;
     private final Circle holeSafeZone;
     private final Outliner outliner = new OutlinerEsri();
+    private final StringProperty text = new SimpleStringProperty("");
     private double margin;
-    private final Button nextButton = new Button();
-    private final Button prevButton = new Button();
     private final ObjectProperty<DrawStep> drawStep = new SimpleObjectProperty<>(DrawStep.DrawShape);
+    private final TextField textField = new TextField();
+    private Shape interior;
 //    private final Outliner outliner = new OutlinerJava2D();
 
 
@@ -123,15 +143,45 @@ public class DrawPane extends BorderPane {
                     return Math.min(stackPane.widthProperty().get() / MATERIAL_SIZE_RATIO, stackPane.heightProperty().get());
                 },
                 stackPane.widthProperty(), stackPane.heightProperty()));
-
-
-        stackPane.getChildren().add(canvas);
+        canvas.setUserData(SortOrder.CANVAS.ordinal());
 
         textPane = new TextPane();
         textPane.setMouseTransparent(true);
-        stackPane.getChildren().add(textPane);
+        textPane.maxWidthProperty().bind(canvas.widthProperty());
+        textPane.minWidthProperty().bind(canvas.widthProperty());
+        textPane.setUserData(SortOrder.TEXT.ordinal());
+        
+        final int MAX_TEXT_LENGTH = 10;
+        text.addListener(t -> {
+            if (text.get().length() > MAX_TEXT_LENGTH) {
+                textField.setText(text.get().substring(0, MAX_TEXT_LENGTH));
+            }
+            textPane.setText(text.get());
+        });
 
+        textField.setTextFormatter(new TextFormatter<>((TextFormatter.Change t) -> {
+            if (t.isContentChange()) {
+                String newText = t.getControlNewText();
+                int newLength = newText.length();
+                if (newLength > MAX_TEXT_LENGTH) {
+                    int extraLength = newLength - MAX_TEXT_LENGTH;
+                    int caretMove = t.getCaretPosition() - t.getControlCaretPosition();
+                    int anchorMove = t.getAnchor() - t.getControlAnchor();
+                    t.setText(t.getText().substring(0, t.getText().length() - extraLength));
+                    t.selectRange(
+                            t.getControlAnchor() + anchorMove - extraLength,
+                            t.getControlCaretPosition() + caretMove - extraLength);
+                }
+            }
+            t.selectRange(t.getControlNewText().length(), t.getControlNewText().length());
+            return t;
+        }));
+        textField.textProperty().bindBidirectional(text);
+        textField.setMaxWidth(100);
+        textField.setUserData(SortOrder.TEXT_FIELD.ordinal());
 
+        stackPane.getChildren().addAll(textField, canvas, textPane);
+        
         pathThick.setStrokeLineCap(StrokeLineCap.ROUND);
         pathThick.setStrokeLineJoin(StrokeLineJoin.ROUND);
         pathThick.setStroke(CUT_COLOR);
@@ -139,26 +189,28 @@ public class DrawPane extends BorderPane {
         pathThick.setMouseTransparent(true);
         pathThick.layoutXProperty().bind(canvas.layoutXProperty());
         pathThick.layoutYProperty().bind(canvas.layoutYProperty());
+        pathThick.setUserData(SortOrder.THICK.ordinal());
         stackPane.getChildren().add(pathThick);
 
         initials.setStrokeLineCap(StrokeLineCap.ROUND);
         initials.setStrokeLineJoin(StrokeLineJoin.ROUND);
-        initials.setStroke(Color.web("7999AC"));
+        initials.setStroke(CARVE_COLOR);
         initials.setManaged(false);
         initials.setMouseTransparent(true);
         initials.layoutXProperty().bind(canvas.layoutXProperty());
         initials.layoutYProperty().bind(canvas.layoutYProperty());
+        initials.setUserData(SortOrder.INITIALS.ordinal());
         stackPane.getChildren().add(initials);
 
         pathThin.setStrokeLineCap(StrokeLineCap.ROUND);
         pathThin.setStrokeLineJoin(StrokeLineJoin.ROUND);
-        pathThin.setStroke(Color.web("FF8080"));
+        pathThin.setStroke(SHAPE_INTERIOR_COLOR);
         pathThin.setManaged(false);
         pathThin.setMouseTransparent(true);
         pathThin.layoutXProperty().bind(canvas.layoutXProperty());
         pathThin.layoutYProperty().bind(canvas.layoutYProperty());
+        pathThin.setUserData(SortOrder.THIN_DRAW_SHAPE.ordinal());
         stackPane.getChildren().add(pathThin);
-
 
         canvas.widthProperty().addListener(e -> {
             pxPerMm.set(canvas.getWidth() / MATERIAL_SIZE_X);
@@ -166,6 +218,11 @@ public class DrawPane extends BorderPane {
             pathThick.setStrokeWidth((MOTIF_WIDTH_MM + 2 * TOOL_DIAMETER) * pxPerMm.get());
             initials.setStrokeWidth(TOOL_DIAMETER * pxPerMm.get());
             textPane.setStrokeWidth(TOOL_DIAMETER * pxPerMm.get());
+            textPane.setMaterialBounds(new BoundingBox(
+                    MATERIAL_BASE_X * pxPerMm.get(),
+                    MATERIAL_BASE_Y * pxPerMm.get(),
+                    MATERIAL_SIZE_X * pxPerMm.get(),
+                    MATERIAL_SIZE_Y * pxPerMm.get()));
             margin = MOTIF_WIDTH_MM * pxPerMm.get() / 2;
         });
 
@@ -174,24 +231,8 @@ public class DrawPane extends BorderPane {
         title.setFont(Font.font(25));
         BorderPane.setAlignment(title, Pos.CENTER);
 
-        nextButton.setId("nextButton");
-        nextButton.disableProperty()
-                .bind(drawStep.isEqualTo(DrawStep.DrawShape)
-                        .or(drawStep.isEqualTo(DrawStep.ReadyToCut))
-                        .or(drawStep.isEqualTo(DrawStep.PositionHole).and(hole.isNull())));
-        nextButton.setOnAction(t -> next());
-        prevButton.setId("prevButton");
-        prevButton.disableProperty()
-                .bind(drawStep.isEqualTo(DrawStep.DrawShape));
-        prevButton.setOnAction(t -> prev());
-        HBox topHBox = new HBox(prevButton, title, nextButton);
-        topHBox.setSpacing(20);
-        topHBox.setAlignment(Pos.CENTER);
-
         setCenter(stackPane);
-        setTop(topHBox);
-
-        drawShape();
+        setTop(title);
 
         holeCircle = new Circle();
         holeCircle.radiusProperty().bind(pxPerMm.multiply(HOLE_DIAMETER / 2));
@@ -200,10 +241,11 @@ public class DrawPane extends BorderPane {
         holeCircle.setMouseTransparent(true);
         holeCircle.layoutXProperty().bind(canvas.layoutXProperty());
         holeCircle.layoutYProperty().bind(canvas.layoutYProperty());
+        holeCircle.setUserData(SortOrder.HOLE.ordinal());
 
         holeSafeZone = new Circle();
         holeSafeZone.radiusProperty().bind(pxPerMm.multiply((HOLE_DISTANCE_FROM_EDGE + HOLE_DIAMETER) / 2));
-        holeSafeZone.setStroke(Color.web("#7999AC"));
+        holeSafeZone.setStroke(CARVE_COLOR);
         holeSafeZone.setFill(Color.TRANSPARENT);
         holeSafeZone.visibleProperty().bind(drawStep.isEqualTo(DrawStep.PositionHole));
         holeSafeZone.setManaged(false);
@@ -212,6 +254,7 @@ public class DrawPane extends BorderPane {
         holeSafeZone.layoutYProperty().bind(canvas.layoutYProperty());
         holeSafeZone.centerXProperty().bind(holeCircle.centerXProperty());
         holeSafeZone.centerYProperty().bind(holeCircle.centerYProperty());
+        holeSafeZone.setUserData(SortOrder.HOLE_SAFE_ZONE.ordinal());
 
         errorMessage.setTextFill(Color.RED);
         errorMessage.setFont(Font.font(20));
@@ -221,37 +264,41 @@ public class DrawPane extends BorderPane {
         errorMessage.layoutYProperty().bind(canvas.layoutYProperty());
         errorMessage.setAlignment(Pos.BOTTOM_CENTER);
         errorMessage.setPadding(new Insets(PADDING));
-
-    }
-
-    public final void prev() {
-        switch (drawStep.get()) {
-            case PositionHole:
-                drawShape();
-                hole.set(null);
-                break;
-            case DrawInitials:
-                if (!undoInitials()) {
-                    if (NO_HOLE) {
-                        drawShape();
-                    } else {
-                        positionHole();
+        errorMessage.setUserData(SortOrder.ERROR_MESSAGE.ordinal());
+        
+        drawToolBox.setManaged(false);
+        drawToolBox.layoutXProperty().bind(canvas.layoutXProperty().subtract(
+                drawToolBox.widthProperty()));
+        drawToolBox.setUserData(SortOrder.DRAW_TOOL_BOX.ordinal());
+        drawToolBox.shape.setOnAction(t -> drawShape());
+        drawToolBox.initials.setOnAction(t -> drawInitials());
+        drawToolBox.text.setOnAction(t -> typeText());
+        drawToolBox.hole.setOnAction(t -> positionHole());
+        drawToolBox.remove.disableProperty().bind(Bindings.createBooleanBinding(
+                () -> {
+                    switch (drawStep.get()) {
+                        case DrawShape:
+                            return outline.get() == null && errorMessage.getParent() == null;
+                        case PositionHole:
+                            return hole.get() == null;
+                        case DrawInitials:
+                            return initials.getElements().isEmpty();
+                        case TypeText:
+                            return Optional.ofNullable(text.get()).orElse("").isEmpty();
                     }
-                    initials.getElements().clear();
-                }
-                break;
-            case ReadyToCut:
-                if (NO_HOLE) {
-                    drawShape();
-                } else {
-                    drawInitials();
-                }
-                break;
-            default:
-                throw new IllegalStateException("Cannot proceed to the next drawing stage from this: " + drawStep.get());
-        }
+                    return false;
+                }, drawStep, hole, outline, initials.getElements(), text, errorMessage.parentProperty()));
+        stackPane.getChildren().add(drawToolBox);
+        
+        drawShape();
     }
 
+    @Override
+    protected void layoutChildren() {
+        super.layoutChildren();
+        drawToolBox.resize(drawToolBox.prefWidth(stackPane.getHeight()), stackPane.getHeight());        
+    }
+    
     public final boolean undoInitials() {
         for (int i = initials.getElements().size() - 1; i >= 0; i--) {
             if (initials.getElements().get(i) instanceof MoveTo) {
@@ -262,28 +309,20 @@ public class DrawPane extends BorderPane {
         return false;
     }
 
-    public final void next() {
-        switch (drawStep.get()) {
-            case PositionHole:
-                drawInitials();
-                break;
-            case DrawInitials:
-                readyToCut();
-                break;
-            default:
-                throw new IllegalStateException("Cannot proceed to the next drawing stage from this: " + drawStep.get());
-        }
-    }
 
     public final void drawShape() {
         drawStep.set(DrawStep.DrawShape);
+        drawToolBox.mode.selectToggle(drawToolBox.shape);
+        reorderNodes();
         canvas.setOnMousePressed(e -> startDrawing(e));
         canvas.setOnMouseDragged(e -> continueDrawing(e));
         canvas.setOnMouseReleased(e -> stopDrawing(e));
         canvas.setOnTouchPressed(e -> startDrawing(e));
         canvas.setOnTouchMoved(e -> continueDrawing(e));
         canvas.setOnTouchReleased(e -> stopDrawing(e));
-        reset();
+        canvas.requestFocus();
+        title.setText("Draw shape");
+        drawToolBox.remove.setOnAction(t -> resetShape());
     }
 
     public void positionHole() {
@@ -292,13 +331,36 @@ public class DrawPane extends BorderPane {
             return;
         }
         drawStep.set(DrawStep.PositionHole);
+        drawToolBox.mode.selectToggle(drawToolBox.hole);
+        reorderNodes();
         canvas.setOnMousePressed(e -> positionHole(e));
         canvas.setOnMouseDragged(e -> positionHole(e));
         canvas.setOnMouseReleased(null);
         canvas.setOnTouchPressed(e -> positionHole(e));
         canvas.setOnTouchMoved(e -> positionHole(e));
         canvas.setOnTouchReleased(null);
-        title.setText("Position badge holder hole");
+        canvas.requestFocus();
+        title.setText("Position badge holder hole");        
+        drawToolBox.remove.setOnAction(t -> resetHole());
+    }
+
+    public void typeText() {
+        if (NO_HOLE) {
+            readyToCut();
+            return;
+        }
+        canvas.setOnMousePressed(null);
+        canvas.setOnMouseDragged(null);
+        canvas.setOnMouseReleased(null);
+        canvas.setOnTouchPressed(null);
+        canvas.setOnTouchMoved(null);
+        canvas.setOnTouchReleased(null);
+        drawStep.set(DrawStep.TypeText);
+        drawToolBox.mode.selectToggle(drawToolBox.text);
+        reorderNodes();
+        title.setText("Type text");
+        drawToolBox.remove.setOnAction(t -> resetText());
+        textField.requestFocus();
     }
 
     private void drawInitials() {
@@ -307,8 +369,8 @@ public class DrawPane extends BorderPane {
             return;
         }
         drawStep.set(DrawStep.DrawInitials);
-        stackPane.getChildren().remove(initials);
-        stackPane.getChildren().add(stackPane.getChildren().indexOf(outline.get()), initials);
+        drawToolBox.mode.selectToggle(drawToolBox.initials);
+        reorderNodes();
         canvas.setOnMousePressed(e -> startDrawingInitials(e));
         canvas.setOnMouseDragged(e -> continueDrawingInitials(e));
         canvas.setOnMouseReleased(e -> continueDrawingInitials(e));
@@ -316,11 +378,21 @@ public class DrawPane extends BorderPane {
         canvas.setOnTouchMoved(e -> continueDrawingInitials(e));
         canvas.setOnTouchReleased(e -> continueDrawingInitials(e));
         title.setText("Draw your initials");
+        drawToolBox.remove.setOnAction(t -> undoInitials());
+        canvas.requestFocus();
     }
 
     public void readyToCut() {
         drawStep.set(DrawStep.ReadyToCut);
         title.setText("Ready to cut");
+        drawToolBox.mode.selectToggle(null);
+        canvas.setOnMousePressed(null);
+        canvas.setOnMouseDragged(null);
+        canvas.setOnMouseReleased(null);
+        canvas.setOnTouchPressed(null);
+        canvas.setOnTouchMoved(null);
+        canvas.setOnTouchReleased(null);
+        reorderNodes();
     }
 
     private double getX(InputEvent e) {
@@ -352,7 +424,7 @@ public class DrawPane extends BorderPane {
         if (Double.isNaN(x) || Double.isNaN(y)) {
             return;
         }
-        reset();
+        resetShape();
         drawing.set(new Drawing(x, y));
     }
 
@@ -377,7 +449,7 @@ public class DrawPane extends BorderPane {
         }
         try {
             drawing.get().stop(x, y);
-            if (NO_HOLE) {
+            if (NO_HOLE || hole.get() != null) {
                 readyToCut();
             } else {
                 positionHole();
@@ -388,14 +460,25 @@ public class DrawPane extends BorderPane {
     }
 
     private void positionHole(InputEvent e) {
-        if (drawing.get() == null) {
-            return;
-        }
         double x = getX(e), y = getY(e);
         if (Double.isNaN(x) || Double.isNaN(y)) {
             return;
         }
-        drawing.get().positionHole(x, y);
+        positionHole(x, y);
+    }
+
+    private void positionHole(double x, double y) {
+        x = clampX(x);
+        y = clampY(y);
+        hole.set(new Point2D(convertX(x), convertY(y)));
+
+        holeCircle.setCenterX(x);
+        holeCircle.setCenterY(y);
+        if (!stackPane.getChildren().contains(holeCircle)) {
+            stackPane.getChildren().add(holeCircle);
+            stackPane.getChildren().add(holeSafeZone);
+            reorderNodes();
+        }
     }
 
     private void startDrawingInitials(InputEvent e) {
@@ -403,7 +486,11 @@ public class DrawPane extends BorderPane {
         if (Double.isNaN(x) || Double.isNaN(y)) {
             return;
         }
-        initials.getElements().add(new MoveTo(clampX(x), clampY(y)));
+        ObservableList<PathElement> ie = initials.getElements();
+        if (!ie.isEmpty() && ie.get(ie.size() - 1) instanceof MoveTo) {
+            ie.remove(ie.size() - 1);
+        }
+        ie.add(new MoveTo(clampX(x), clampY(y)));
     }
 
     private void continueDrawingInitials(InputEvent e) {
@@ -411,14 +498,58 @@ public class DrawPane extends BorderPane {
         if (Double.isNaN(x) || Double.isNaN(y)) {
             return;
         }
-        initials.getElements().add(new LineTo(clampX(x), clampY(y)));
+        ObservableList<PathElement> ie = initials.getElements();
+        if (ie.isEmpty()) {
+            System.err.println("Skipping adding LineTo to empty initials");
+            return;
+        }
+        LineTo lineTo = new LineTo(clampX(x), clampY(y));
+        PathElement prevElement = ie.get(ie.size() - 1);
+        if (!lineToEquals(lineTo, prevElement)) {
+            ie.add(lineTo);
+        }
+    }
+    
+    private static boolean lineToEquals(LineTo lineTo, Object obj) {
+        if (!(obj instanceof LineTo)) {
+            return false;
+        }
+        LineTo aLineTo = (LineTo) obj;
+        return lineTo.getX() == aLineTo.getX() && lineTo.getY() == aLineTo.getY();
+    }
+
+    public void importCut(Cut cut) {
+        drawing.set(new Drawing(0, 0));
+        reset();
+        outline.set(new Path(cut.getOutline().getElements()));
+        configOutline();
+        text.set(cut.getText());
+        initials.getElements().setAll(cut.getInitials().getElements());
+        hole.set(cut.getHole());
+        holeCircle.setCenterX(unconvertX(cut.getHole().getX()));
+        holeCircle.setCenterY(unconvertY(cut.getHole().getY()));
+        interior = new Path(cut.getInterior().getElements());
+        interior.setStroke(null);
+        interior.setFill(SHAPE_INTERIOR_COLOR);
+        Path shownInterior = new Path(cut.getInterior().getElements());
+        importedShapeInterior = new Group(shownInterior);
+        shownInterior.setStroke(null);
+        shownInterior.setFill(SHAPE_INTERIOR_COLOR);
+        importedShapeInterior.setMouseTransparent(true);
+        importedShapeInterior.setManaged(false);
+        importedShapeInterior.layoutXProperty().bind(canvas.layoutXProperty());
+        importedShapeInterior.layoutYProperty().bind(canvas.layoutYProperty());
+        importedShapeInterior.setUserData(SortOrder.INTERIOR.ordinal());
+        stackPane.getChildren().addAll(holeCircle, holeSafeZone, importedShapeInterior);
+        readyToCut();
     }
 
     public static enum ImportSource {MODEL, WEBAPP}
 
-    ;
-
-    public void importSVG(String svg, double size, ImportSource importSource) {
+    public void importSVG(String svg, double size, ImportSource importSource) {        
+        drawing.set(new Drawing(0, 0)); // TODO: Fix this workaround to indicate there is a drawing
+        reset();
+        
         SVGPath svgPath = new SVGPath();
         svgPath.setContent(svg);
         svgPath.setFillRule(FillRule.EVEN_ODD);
@@ -434,11 +565,6 @@ public class DrawPane extends BorderPane {
                             -b.getMinY() * -scale + (MATERIAL_SIZE_Y - b.getHeight() * -scale) / 2),
                     new Scale(scale, -scale));
         }
-//        System.out.println("before svgPath.getBoundsInLocal() = " + svgPath.getBoundsInLocal());
-//        System.out.println("after svgPath.getBoundsInParent() = " + svgPath.getBoundsInParent());
-
-        drawing.set(new Drawing(0, 0)); // TODO: Fix this workaround to indicate there is a drawing
-        reset();
         Path path = (Path) Shape.union(svgPath, new Rectangle(0, 0));
         printPathCount(path, "path");
         Path simplifiedPath = simplify(path);
@@ -457,38 +583,27 @@ public class DrawPane extends BorderPane {
             default:
                 throw new IllegalStateException("Unexpected import source: " + importSource);
         }
-        outlinePath.setStrokeWidth(Configuration.TOOL_DIAMETER);
-        outlinePath.setStroke(CUT_COLOR);
-        outlinePath.setStrokeLineJoin(StrokeLineJoin.ROUND);
-        outlinePath.setStrokeLineCap(StrokeLineCap.ROUND);
-        outlinePath.getTransforms().addAll(
-                new Translate(0, -Configuration.MATERIAL_SIZE_Y),
-                new Scale(pxPerMm.get(), -pxPerMm.get(), 0, MATERIAL_SIZE_Y));
-        outlinePath.setMouseTransparent(true);
-        outlinePath.setManaged(false);
-        outlinePath.layoutXProperty().bind(canvas.layoutXProperty());
-        outlinePath.layoutYProperty().bind(canvas.layoutYProperty());
-        System.out.println("before outline.getBoundsInLocal() = " + outlinePath.getBoundsInLocal());
-        System.out.println("after outline.getBoundsInParent() = " + outlinePath.getBoundsInParent());
         outline.set(outlinePath);
+        configOutline();
 
-        g = new Group(svgPath);
-        svgPath.setFill(Color.RED);
-        svgPath.setOpacity(0.5);
-        g.setMouseTransparent(true);
-        g.setManaged(false);
-        g.layoutXProperty().bind(canvas.layoutXProperty());
-        g.layoutYProperty().bind(canvas.layoutYProperty());
-        g.getTransforms().addAll(
+        importedShapeInterior = new Group(svgPath);
+        svgPath.setFill(SHAPE_INTERIOR_COLOR);
+        importedShapeInterior.setMouseTransparent(true);
+        importedShapeInterior.setManaged(false);
+        importedShapeInterior.getTransforms().addAll(
                 new Translate(0, -Configuration.MATERIAL_SIZE_Y),
                 new Scale(pxPerMm.get(), -pxPerMm.get(), 0, MATERIAL_SIZE_Y));
-        stackPane.getChildren().addAll(g, outlinePath);
+        importedShapeInterior.setUserData(SortOrder.INTERIOR.ordinal());
+        interior = Shape.union(svgPath, new Rectangle(0, 0));
+        importedShapeInterior.layoutXProperty().bind(canvas.layoutXProperty());
+        importedShapeInterior.layoutYProperty().bind(canvas.layoutYProperty());
+        stackPane.getChildren().addAll(importedShapeInterior);
 
         positionHole();
     }
-
+    
     private static void printPathCount(Path path, String name) {
-        System.out.println(name + " count = " + path.getElements().stream().filter(
+        log(name + " count = " + path.getElements().stream().filter(
                 elem -> elem instanceof MoveTo).count());
     }
 
@@ -501,23 +616,41 @@ public class DrawPane extends BorderPane {
         Path path2 = SmallPolygonsCleaner.clean(path1);
         return path2;
     }
+    
+    private void resetText() {
+        text.set("");
+        textField.requestFocus();
+    }
 
-    private void reset() {
+    private void resetShape() {
         if (outline.get() != null) {
             stackPane.getChildren().remove(outline.get());
             outline.set(null);
         }
-        if (g != null) {
-            stackPane.getChildren().remove(g);
-            g = null;
+        if (importedShapeInterior != null) {
+            stackPane.getChildren().remove(importedShapeInterior);
+            importedShapeInterior = null;
         }
-        stackPane.getChildren().removeAll(holeCircle, holeSafeZone, errorMessage);
-        hole.set(null);
+        interior = null;
         pathThin.getElements().clear();
         pathThick.getElements().clear();
+        stackPane.getChildren().removeAll(errorMessage);
+    }
+    
+    private void resetHole() {
+        stackPane.getChildren().removeAll(holeCircle, holeSafeZone);
+        hole.set(null);
+    }
+    
+    public void reset() {
+        resetShape();
+        resetHole();
+        resetText();
+        resetInitials();
+    }
+
+    private void resetInitials() {
         initials.getElements().clear();
-        title.setTextFill(Color.WHITE);
-        title.setText("Draw shape");
     }
 
     public class Drawing {
@@ -551,19 +684,6 @@ public class DrawPane extends BorderPane {
             generateOutline();
         }
 
-        private void positionHole(double x, double y) {
-            x = clampX(x);
-            y = clampY(y);
-            hole.set(new Point2D(convertX(x), convertY(y)));
-
-            holeCircle.setCenterX(x);
-            holeCircle.setCenterY(y);
-            if (!stackPane.getChildren().contains(holeCircle)) {
-                stackPane.getChildren().add(holeCircle);
-                stackPane.getChildren().add(holeSafeZone);
-            }
-        }
-
         public Path getPath() {
             return new Path(p.getElements());
         }
@@ -572,6 +692,16 @@ public class DrawPane extends BorderPane {
             //        Path path = new Path(new MoveTo(0, 0), new LineTo(100, 0), new LineTo(80, 25), new LineTo(100, 50), new LineTo(0, 50), new ClosePath());
             //        Outliner outliner = new Outliner(path);
             Path outlinePath = outliner.generateOutline(drawing.get().getPath());
+            pathThick.getElements().clear();
+            outline.set(outlinePath);
+            configOutline();
+            reorderNodes();
+        }
+    }
+    
+    private void configOutline() {
+        Path outlinePath = outline.get();
+        if (outlinePath != null) {
             outlinePath.setStrokeWidth(Configuration.TOOL_DIAMETER);
             outlinePath.setStroke(CUT_COLOR);
             outlinePath.setStrokeLineJoin(StrokeLineJoin.ROUND);
@@ -579,16 +709,34 @@ public class DrawPane extends BorderPane {
             outlinePath.getTransforms().addAll(
                     new Translate(0, -Configuration.MATERIAL_SIZE_Y),
                     new Scale(pxPerMm.get(), -pxPerMm.get(), 0, Configuration.MATERIAL_SIZE_Y));
-            pathThick.getElements().clear();
-            stackPane.getChildren().add(outlinePath);
             outlinePath.setMouseTransparent(true);
             outlinePath.setManaged(false);
             outlinePath.layoutXProperty().bind(canvas.layoutXProperty());
             outlinePath.layoutYProperty().bind(canvas.layoutYProperty());
-            outline.set(outlinePath);
+            outlinePath.setUserData(SortOrder.OUTLINE.ordinal());
+            stackPane.getChildren().add(outlinePath);
         }
     }
-
+    
+    private void reorderNodes() {
+        pathThin.setUserData(drawStep.get() == DrawStep.DrawShape 
+                ? SortOrder.THIN_DRAW_SHAPE.ordinal()
+                : SortOrder.THIN.ordinal());
+        pathThick.setUserData(drawStep.get() == DrawStep.DrawShape 
+                ? SortOrder.THICK_DRAW_SHAPE.ordinal()
+                : SortOrder.THICK.ordinal());
+        holeCircle.setUserData(drawStep.get() == DrawStep.PositionHole 
+                ? SortOrder.HOLE_POSITION_HOLE.ordinal()
+                : SortOrder.HOLE.ordinal());
+        stackPane.getChildren().setAll(stackPane.getChildren().stream().sorted(new Comparator<Node>() {
+            
+            @Override
+            public int compare(Node o1, Node o2) {
+                return (int) o1.getUserData() - (int) o2.getUserData();
+            }
+        }).collect(Collectors.toList()));
+    }
+    
     private double clampX(double x) {
         return Math.max(margin, Math.min(x, canvas.getWidth() - margin));
     }
@@ -605,10 +753,21 @@ public class DrawPane extends BorderPane {
         return Configuration.MATERIAL_SIZE_Y - y / pxPerMm.get();
     }
 
+    private double unconvertX(double x) {
+        return x * pxPerMm.get();
+    }
+
+    private double unconvertY(double y) {
+        return (Configuration.MATERIAL_SIZE_Y - y) * pxPerMm.get();
+    }
+
     private void showErrorMessage(Exception ex) {
         errorMessage.setText(ex.getMessage());
         errorMessage.resize(canvas.getWidth(), canvas.getHeight());
-        stackPane.getChildren().add(errorMessage);
+        if (!stackPane.getChildren().contains(errorMessage)) {
+            stackPane.getChildren().add(errorMessage);
+            reorderNodes();
+        }
     }
 
     public ObjectProperty<Point2D> holeProperty() {
@@ -624,6 +783,9 @@ public class DrawPane extends BorderPane {
         Bounds b = textInitials.getBoundsInLocal();
         double dx = b.getMinX() + b.getWidth() / 2 - canvas.getWidth() / 2;
         double dy = b.getMinY() + b.getHeight()/ 2 - canvas.getHeight() / 2;
+        if (!ENABLE_TEXT) {
+            textInitials = new Path();
+        }
         return new Path(Stream.concat(initials.getElements().stream().map(pathElement -> {
             if (pathElement instanceof MoveTo) {
                 MoveTo mt = (MoveTo) pathElement;
@@ -634,18 +796,50 @@ public class DrawPane extends BorderPane {
             } else {
                 throw new IllegalStateException("Unexpected path element: " + pathElement);
             }
-        }), textInitials.getElements().stream().map(pathElement -> {
+        }), textInitials.getElements().stream()
+                .map(new PathElementMapper(
+                        x -> convertX(x - dx), 
+                        y -> convertY(y - dy)
+                )))
+                .collect(Collectors.toList()));
+    }
+    
+    public static class PathElementMapper implements Function<PathElement, PathElement> {
+        
+        private final Function<Double, Double> convertX;
+        private final Function<Double, Double> convertY;
+
+        public PathElementMapper(Function<Double, Double> convertX,
+                Function<Double, Double> convertY) {
+            this.convertX = convertX;
+            this.convertY = convertY;
+        }
+
+        @Override
+        public PathElement apply(PathElement pathElement) {
             if (pathElement instanceof MoveTo) {
                 MoveTo mt = (MoveTo) pathElement;
-                return new MoveTo(convertX(mt.getX() - dx), convertY(mt.getY() - dy));
+                return new MoveTo(convertX.apply(mt.getX()), convertY.apply(mt.getY()));
             } else if (pathElement instanceof LineTo) {
                 LineTo mt = (LineTo) pathElement;
-                return new LineTo(convertX(mt.getX() - dx), convertY(mt.getY() - dy));
+                return new LineTo(convertX.apply(mt.getX()), convertY.apply(mt.getY()));
             } else if (pathElement instanceof ClosePath) {
                 return pathElement;
             } else {
                 throw new IllegalStateException("Unexpected path element: " + pathElement);
             }
-        })).collect(Collectors.toList()));
+        }
+    }
+    
+    public Cut getCut() {
+        if (interior == null) {
+            Path thinCopy = new Path(pathThin.getElements());
+            thinCopy.setStrokeWidth(pathThin.getStrokeWidth());
+            thinCopy.setStrokeLineCap(pathThin.getStrokeLineCap());
+            thinCopy.setStrokeLineJoin(pathThin.getStrokeLineJoin());
+            interior = thinCopy;
+        }
+        Path pathInterior = (Path) Shape.union(interior, new Rectangle(0, 0));
+        return new Cut(outline.get(), pathInterior, hole.get(), text.get(), initials);
     }
 }

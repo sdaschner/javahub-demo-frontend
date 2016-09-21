@@ -26,11 +26,8 @@ package drawandcut.ui;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.VBox;
 
 import static drawandcut.Configuration.*;
 
@@ -40,41 +37,34 @@ import static drawandcut.Configuration.*;
 public class ControlPane extends GridPane {
     private final ToggleButton scan = new ToggleButton("Scan");
     private final ToggleButton draw = new ToggleButton("Draw");
-    private final TextField initials = new TextField();
 
     private final Button cut = new Button("Cut");
     private final ToggleButton load = new ToggleButton("Load");
-    private final Button exit = new Button("Exit");
+    private final ToggleButton exit = new ToggleButton("Exit");
+    private final Button even = new Button("Make surface even");
 
     public ControlPane() {
         scan.setId("scan");
-        scan.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
         draw.setId("draw");
-        draw.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
-
         load.setId("load");
-        load.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
         cut.setId("cut");
-        cut.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
         exit.setId("exit");
-        exit.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
+        even.setId("even");
 
         setId("controlPane");
         setPadding(new Insets(PADDING));
         setVgap(PADDING);
         setAlignment(Pos.CENTER);
-        addRow(0, scan);
-        addRow(1, draw);
-
-        VBox initialPane = new VBox();
-        initialPane.setAlignment(Pos.CENTER);
-        initialPane.getChildren().addAll(initials, new Label("Text"));
-        initialPane.setPrefSize(BUTTON_PREF_WIDTH, BUTTON_PREF_HEIGHT);
-
-        addRow(2, initialPane);
-        addRow(3, load);
-        addRow(4, cut);
-//        addRow(4, exit);
+        
+        int rowIndex = 0;
+        addRow(rowIndex++, scan);
+        addRow(rowIndex++, draw);
+        addRow(rowIndex++, load);
+        addRow(rowIndex++, cut);
+        if (ENABLE_EVENER) {
+            addRow(rowIndex++, even);
+        }
+        addRow(rowIndex++, exit);
     }
 
     public Button cutButton() {
@@ -92,12 +82,12 @@ public class ControlPane extends GridPane {
     public ToggleButton drawButton() {
         return draw;
     }
-
-    public Button exitButton() {
+    
+    public ToggleButton exitButton() {
         return exit;
     }
 
-    public TextField initialsField() {
-        return initials;
+    public Button evenButton() {
+        return even;
     }
 }

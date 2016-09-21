@@ -26,7 +26,7 @@ package drawandcut.cutter;
 import com.willwinder.universalgcodesender.GrblController;
 import com.willwinder.universalgcodesender.listeners.ControllerListener;
 import com.willwinder.universalgcodesender.types.GcodeCommand;
-import static drawandcut.Configuration.PROBING_OFFSET;
+import static drawandcut.Configuration.*;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -85,22 +85,40 @@ public class Cutter {
     private final String[] COORDINATE_RESET = { COORDINATE_RESET_TEMPLATE };
     private double prbZ = Double.NaN; // Tool measurement Z
 
+    private void recoverFromFailure() {
+        ready.set(false);
+        try {
+            grblController.cancelSend();
+            grblController.issueSoftReset();
+            grblController.closeCommPort();
+            grblController = null;
+            initState = InitSequenceState.NOT_CONNECTED;
+            machineCoord.set(0, 0, 0);
+            workCoord.set(0, 0, 0);
+
+            toConnect.run();
+        } catch (Exception ex) {
+            Logger.getLogger(Cutter.class.getName())
+                    .log(Level.SEVERE, null, ex);
+        }
+    }
+
     private class CutterListener implements ControllerListener {
 
         @Override
         public void fileStreamComplete(String filename, boolean success) {
-            System.out.println(
+            log(
                     "ControllerListener.fileStreamComplete-1 filename = "
                     + filename + ", success = " + success);
             Platform.runLater(() -> {
-                System.out.println(
+                log(
                         "ControllerListener.fileStreamComplete-2 filename = "
                         + filename + ", success = " + success);
                 switch (initState) {
                     case PROBING1:
                         initState = InitSequenceState.PROBING2;
                         PROBE2[0] = "G0Z" + (machineCoord.z + 5);
-                        System.out.println("PROBE2 = " + Arrays.toString(PROBE2));
+                        log("PROBE2 = " + Arrays.toString(PROBE2));
                         sendSequenceNoCheck(PROBE2);
                         break;
                     case PROBING2:
@@ -127,26 +145,27 @@ public class Cutter {
         }
 
         public void printState() {
-            System.out.println("initState = " + initState);
-            System.out.println("state = " + state);
-            System.out.println("workCoord = " + workCoord);
-            System.out.println("machineCoord = " + machineCoord);
+            log("initState = " + initState);
+            log("state = " + state);
+            log("workCoord = " + workCoord);
+            log("machineCoord = " + machineCoord);
         }
 
         @Override
         public void commandSent(GcodeCommand command) {
-            System.out.println("ControllerListener.commandSent command = "
+            log("ControllerListener.commandSent command = "
                     + command);
         }
 
         @Override
         public void commandComplete(GcodeCommand command) {
             try {
-                System.out.println("ControllerListener.commandComplete command = "
+                log("ControllerListener.commandComplete command = "
                         + command);
                 switch (initState) {
                     case NOT_CONNECTED:
                         initState = InitSequenceState.CONNECTED;
+                        grblController.softReset(); // Just in case
                         break;
                     case CONNECTED:
                         initState = InitSequenceState.HOMING;
@@ -167,7 +186,7 @@ public class Cutter {
 
         @Override
         public void commandComment(String comment) {
-            System.out.println("ControllerListener.commandComment comment = "
+            log("ControllerListener.commandComment comment = "
                     + comment);
         }
 
@@ -177,7 +196,7 @@ public class Cutter {
 //            if (type != ControllerListener.MessageType.VERBOSE 
 //                    || msg.startsWith("GrblFeedbackMessage")) {
                 
-                System.out.print("CutterConnection verbose = " + verbose + ", " + msg);
+                log("CutterConnection verbose = " + verbose + ", " + msg);
 //            }
             // parse [PRB:-2.500,-5.000,-84.405:1]
             if (!verbose && msg.startsWith("[PRB:")) {
@@ -187,7 +206,7 @@ public class Cutter {
 //                    System.out.println("matcher = " + matcher);
 //                    System.out.println("matcher.group(1) = " + matcher.group(1));
                     prbZ = Double.parseDouble(matcher.group(1));
-                    System.out.println("prbZ = " + prbZ);
+                    log("prbZ = " + prbZ);
                     COORDINATE_RESET[0] = COORDINATE_RESET_TEMPLATE + " Z" + (PROBING_OFFSET - prbZ);
 //                    System.out.println("COORDINATE_RESET[0] = " + COORDINATE_RESET[0]);
                 }
@@ -196,8 +215,9 @@ public class Cutter {
                 initState = InitSequenceState.CONNECTED;
             } else if (!verbose && msg.contains("['$H'|'$X' to unlock]") && initState == InitSequenceState.CONNECTED) {
                 performHoming();
-            } else if (!verbose && msg.contains("error")) {
-                throw new IllegalStateException("Error happened");
+            } else if (msg.contains("error") || msg.contains("Error")) {
+                new Exception("The message contains error: " + msg).printStackTrace();
+                recoverFromFailure();
             }
         }
         
@@ -214,7 +234,7 @@ public class Cutter {
         @Override
         public void statusStringListener(String state, Point3d machineCoord,
                 Point3d workCoord) {
-            System.out.println("ControllerListener.statusStringListener state = " + state + ", machineCoord = " + machineCoord + ", workCoord = " + workCoord);
+            log("ControllerListener.statusStringListener state = " + state + ", machineCoord = " + machineCoord + ", workCoord = " + workCoord);
             Cutter.this.state = state;
             Cutter.this.machineCoord.set(machineCoord);
             Cutter.this.workCoord.set(workCoord);
@@ -224,31 +244,19 @@ public class Cutter {
             }
         }
         
-        private void recoverFromFailure() {
-            ready.set(false);
-            try {
-                grblController.cancelSend();
-                grblController.closeCommPort();
-                grblController = null;
-                initState = InitSequenceState.NOT_CONNECTED;
-                
-                toConnect.run();
-            } catch (Exception ex) {
-                Logger.getLogger(Cutter.class.getName())
-                        .log(Level.SEVERE, null, ex);
-            }
-        }
-
         @Override
         public void postProcessData(int numRows) {
-            System.out.println("ControllerListener.postProcessData numRows = "
+            log("ControllerListener.postProcessData numRows = "
                     + numRows);
         }
 
         @Override
         public void commandQueued(GcodeCommand command) {
-            System.out.println("ControllerListener.commandQueued command = "
+            log("ControllerListener.commandQueued command = "
                     + command);
+            if (command == null) {
+                new Exception("Command is null!").printStackTrace();
+            }
         }
 
     }
@@ -270,6 +278,7 @@ public class Cutter {
             grblController.beginStreaming();
         } catch (Exception ex) {
             Logger.getLogger(Cutter.class.getName()).log(Level.SEVERE, null, ex);
+            recoverFromFailure();
         }
     }
 

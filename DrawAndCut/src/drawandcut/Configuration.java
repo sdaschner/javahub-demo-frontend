@@ -27,6 +27,8 @@ package drawandcut;
  * @author akouznet
  */
 public class Configuration {
+    
+    public static final boolean DEBUG = Boolean.getBoolean("debug");
 
     public static final boolean DISABLE_CUTTER = Boolean.getBoolean("disableCutter");
     public static final boolean DISABLE_CAMERA = Boolean.getBoolean("disableCamera");
@@ -49,9 +51,9 @@ public class Configuration {
 
     public static final int RPM = Integer.parseInt(System.getProperty("rpm", "9000")); // rpm
     public static final double FEED = Double.parseDouble(System.getProperty("feed", Double.toString(44 * IN))); // mmpm
-    public static final double PLUNGE_FEED = 14 * IN; // mmpm
+    public static final double PLUNGE_FEED = Double.parseDouble(System.getProperty("plungeFeed", Double.toString(10 * IN))); // mmpm
     public static final double RECOMMENDED_DOC = 0.019 * IN; // 0.4826 mm <-- recommended DOC
-    public static final double INITIALS_DOC = RECOMMENDED_DOC / 2; // mm
+    public static final double INITIALS_DOC = RECOMMENDED_DOC; // mm
     public static final int NUMBER_OF_PASSES = Integer.parseInt(System.getProperty("numberOfPasses", "7"));
     public static final double DOC = MATERIAL_SIZE_Z / NUMBER_OF_PASSES; // mm
     public static final double Z_ACCURACY = 0.01; // mm
@@ -65,8 +67,6 @@ public class Configuration {
 
     public static final boolean NO_HOLE = Boolean.getBoolean("noHole");
 
-    public static final double BUTTON_PREF_WIDTH = 100;
-    public static final double BUTTON_PREF_HEIGHT = 70;
     public static final double PADDING = 8;
 
     public static final int SCREEN_PADDING_TOP = Integer.parseInt(System.getProperty("screenPaddingTop", "0"));
@@ -76,15 +76,20 @@ public class Configuration {
 
     public static final double HOLE_DIAMETER = 6 / 32. * IN; // mm
     public static final double HOLE_DISTANCE_FROM_EDGE = 2.5 * CM; // mm
+    
+    public static final String CLOUD_BASE_URL = System.getProperty("cloudBaseUrl",
+            "http://javahub-demo-javahub-demo-backend.44fs.preview.openshiftapps.com/javahub-cutter-backend/modules/drawings/");
+    
+    public static final boolean ENABLE_EVENER = Boolean.getBoolean("enableEvener");
+    public static final boolean ENABLE_TEXT = Boolean.getBoolean("enableText");
 
     public static final String FONT_FACE = System.getProperty("fontFace", "Verdana");
     public static final int FONT_SIZE = Integer.getInteger("fontSize", 100);
 
     static {
         System.out.println("Configuration summary:");
-        System.out.println("DISABLE_CUTTER = " + DISABLE_CUTTER);
-        System.out.println("DISABLE_CAMERA = " + DISABLE_CAMERA);
-        System.out.println("System.getProperty(\"disableCamera\") = " + System.getProperty("disableCamera"));
+        System.out.println("Cutter " + (DISABLE_CUTTER ? "disabled" : "enabled"));
+        System.out.println("Camera " + (DISABLE_CAMERA ? "disabled" : "enabled"));
         System.out.println();
         System.out.printf("Material size (X x Y x Z): %.1f x %.1f x %.3f mm. Bottom Z = %.3f mm.\n", MATERIAL_SIZE_X, MATERIAL_SIZE_Y, MATERIAL_SIZE_Z, MATERIAL_BASE_Z);
         System.out.printf("Number of passes: %d. Depth of one cut: %.3f mm (Recommended: %.3f mm).\n", NUMBER_OF_PASSES, DOC, RECOMMENDED_DOC);
@@ -95,5 +100,11 @@ public class Configuration {
         System.out.printf("RPM: %d. Feed: %.1f ipm, plunge feed: %.1f ipm\n", RPM, FEED / IN, PLUNGE_FEED / IN);
 
         System.out.println("");
+    }
+    
+    public static void log(String msg) {
+        if (DEBUG) {
+            System.out.println(msg);
+        }
     }
 }

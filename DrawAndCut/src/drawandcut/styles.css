@@ -1,16 +1,19 @@
 #controlPane,
-#flowPane {
+#flowPane, 
+#exitPopup {
     -fx-background-color: white;
 }
 
 #drawPane, #shapesPane, #scannerPane {
     -fx-background-color: #5382A1;
 }
-
-.svg-path {
-    -fx-fill: #7999AC;
+#drawPane {
+    -fx-padding: 3 8 8 85;
 }
-
+.svg-path, #flowPane Path {
+    -fx-fill: #7999AC;
+    -fx-stroke: null;
+}
 .button, 
 .toggle-button {    
     -fx-content-display: top;
@@ -23,23 +26,68 @@
 .toggle-button:selected {
     -fx-background-color: D5E6ED;
 }
-
 .button:hover, 
 .toggle-button:hover {
     -fx-background-color: F2F7F9;
 }
-
+.toggle-button:hover:selected {
+    -fx-background-color: CCE1EA;
+}
+#exitPopup, #drawToolBox {
+    -fx-padding: 8;
+    -fx-spacing: 8;
+}
+#exitPopup {
+    -fx-border-color: #5382A1;
+}
+#exitPopup .button,
+#controlPane .button,
+#controlPane .toggle-button,
+#controlPane>VBox {
+    -fx-pref-width: 100;
+    -fx-pref-height: 70;
+}
+#drawToolBox .button,
+#drawToolBox .toggle-button {
+    -fx-pref-width: 90;
+    -fx-pref-height: 60;
+}
 #scan {
     -fx-graphic: url("ui/icons/qr-code-scan.png");
 }
 #draw {
     -fx-graphic: url("ui/icons/draw.png");
 }
+#shape {
+    -fx-graphic: url("ui/icons/shape.png");
+}
+#initials {
+    -fx-graphic: url("ui/icons/initials.png");
+}
+#text {
+    -fx-graphic: url("ui/icons/text.png");
+}
+#hole {
+    -fx-graphic: url("ui/icons/hole.png");
+    -fx-font-size: 12;
+}
+#remove {
+    -fx-graphic: url("ui/icons/remove.png");
+}
 #load {
     -fx-graphic: url("ui/icons/open-file-button.png");
 }
 #exit {
     -fx-graphic: url("ui/icons/exit.png");
+}
+#restart {
+    -fx-graphic: url("ui/icons/restart.png");
+}
+#reboot {
+    -fx-graphic: url("ui/icons/reboot.png");
+}
+#poweroff {
+    -fx-graphic: url("ui/icons/poweroff.png");
 }
 #cut {
     -fx-graphic: url("ui/icons/drilling-machine.png");

@@ -34,6 +34,7 @@ import com.google.zxing.qrcode.QRCodeReader;
 import com.hopding.jrpicam.RPiCamera;
 import com.hopding.jrpicam.exceptions.FailedToRunRaspistillException;
 import static drawandcut.Configuration.DISABLE_CAMERA;
+import static drawandcut.Configuration.log;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Optional;
@@ -59,7 +60,7 @@ public class QRCodeScanner {
     }
     
     private void init() {
-        System.out.println("QRCodeScanner.init()");
+        log("QRCodeScanner.init()");
         if (!DISABLE_CAMERA) {
             try {
                 piCamera = new RPiCamera("/home/pi/Pictures");
@@ -90,7 +91,7 @@ public class QRCodeScanner {
                 piCamera = null;
             }
         }
-        System.out.println("piCamera = " + piCamera);
+        log("piCamera = " + piCamera);
     }
     
     public void setPreviewPosition(int x, int y, int width, int height) {
@@ -100,14 +101,14 @@ public class QRCodeScanner {
     }
     
     public Optional<Image> takeImage() {
-        System.out.println("takeImage()");
+        log("takeImage()");
         if (piCamera != null) {
             try {
                 Optional<BufferedImage> bufferedImageOptional = Optional.ofNullable(piCamera.takeBufferedStill());
-                System.out.println("bufferedImage = " + bufferedImageOptional);
+                log("bufferedImage = " + bufferedImageOptional);
                 return bufferedImageOptional.flatMap(bufferedImage -> {
                     WritableImage image = convertImage(bufferedImage);
-                    System.out.println("image = " + image);
+                    log("image = " + image);
     //                PixelReader pixelReader = image.getPixelReader();
     //                PixelFormat pixelFormat
     //                        = pixelReader.getPixelFormat();
@@ -141,13 +142,13 @@ public class QRCodeScanner {
                     BinaryBitmap binaryBitmap
                             = new BinaryBitmap(new HybridBinarizer(new BufferedImageLuminanceSource(bufferedImage)));
                     Result decode = reader.decode(binaryBitmap);
-                    System.out.println("QR code decoded: " + decode);
+                    log("QR code decoded: " + decode);
                     piCamera.stop();
                     Platform.runLater(() -> {
                         resultConsumer.accept(convertImage(bufferedImage), decode.getText());
                     });
                 } catch (NotFoundException | ChecksumException exception) {
-                    System.out.println(exception);
+                    log(exception.toString());
                 } catch (FormatException ex) {
                     Logger.getLogger(QRCodeScanner.class.getName())
                             .log(Level.SEVERE, null, ex);

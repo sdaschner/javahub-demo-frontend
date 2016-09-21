@@ -28,6 +28,7 @@ import com.willwinder.universalgcodesender.i18n.Localization;
 import com.willwinder.universalgcodesender.listeners.SerialCommunicatorListener;
 import com.willwinder.universalgcodesender.types.GcodeCommand;
 import java.util.ArrayList;
+import javafx.application.Platform;
 
 /**
  *
@@ -157,26 +158,20 @@ public abstract class AbstractCommunicator {
      * A bunch of methods to dispatch listener events with various arguments.
      */
     static protected void dispatchListenerEvents(final int event, final ArrayList<SerialCommunicatorListener> sclList, final String message) {
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                if (sclList != null) {
-                    for (SerialCommunicatorListener s : sclList) {
-                        sendEventToListener(event, s, message, null);
-                    }
+        Platform.runLater(() -> {
+            if (sclList != null) {
+                for (SerialCommunicatorListener s : sclList) {
+                    sendEventToListener(event, s, message, null);
                 }
             }
         });
     }
     
     static protected void dispatchListenerEvents(final int event, final ArrayList<SerialCommunicatorListener> sclList, final GcodeCommand command) {
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                if (sclList != null) {
-                    for (SerialCommunicatorListener s : sclList) {
-                        sendEventToListener(event, s, null, command);
-                    }
+        Platform.runLater(() -> {
+            if (sclList != null) {
+                for (SerialCommunicatorListener s : sclList) {
+                    sendEventToListener(event, s, null, command);
                 }
             }
         });

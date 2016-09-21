@@ -465,7 +465,11 @@ public abstract class AbstractController implements SerialCommunicatorListener, 
             throw new Exception("Cannot stream while there are active commands (controller).");
         }
         if (this.comm.areActiveCommands()) {
-            throw new Exception("Cannot stream while there are active commands (communicator).");
+            String commands = "";
+            if (this.comm instanceof BufferedCommunicator) {
+                commands = ((BufferedCommunicator)this.comm).getActiveStringList().toString();
+            }
+            throw new Exception("Cannot stream while there are active commands (communicator): " + commands);
         }
 
         return true;
@@ -622,33 +626,39 @@ public abstract class AbstractController implements SerialCommunicatorListener, 
     }
     
     @Override
-    public void commandSent(String commandStr) {
+    public void commandSent(String commandSent) {
         this.sentIdx++;
         
         if (this.isStreamingFile()) {
             this.numCommandsSent++;
         }
         
-        GcodeCommand command = this.commands.get(this.awaitingResponseIdx++);
+        GcodeCommand awaitingResponseCommand = this.commands.get(this.awaitingResponseIdx++);
 
         // Jump over skipped commands
-        while (command.isSkipped()) {
-            command = this.commands.get(this.awaitingResponseIdx++);
+        while (awaitingResponseCommand.isSkipped()) {
+            awaitingResponseCommand = this.commands.get(this.awaitingResponseIdx++);
             this.sentIdx++;
         }
 
         //GcodeCommand c = this.outgoingQueue.remove();
-        if (!command.isSkipped())
-            command.setSent(true);
+        if (!awaitingResponseCommand.isSkipped())
+            awaitingResponseCommand.setSent(true);
         
-        if (!command.getCommandString().equals(commandStr)) {
-            this.errorMessageForConsole("Command <"+command.getCommandString()+
-                    "> does not equal expected command <"+commandStr+">");
+        if (!awaitingResponseCommand.getCommandString().equals(commandSent)) {
+            String msg
+                    = "awaitingResponseCommand <" + awaitingResponseCommand
+                    .getCommandString() + "> is not equal to commandSent <"
+                    + commandSent + ">";
+            new Exception(msg).printStackTrace();
+            System.err.println("this.comm.getSingleStepMode() = " + this.comm.getSingleStepMode());
+            System.out.println("Thread.currentThread() = " + Thread.currentThread());
+            this.errorMessageForConsole(msg);
         }
 
         //this.awaitingResponseQueue.add(c);
         
-        dispatchCommandSent(command);
+        dispatchCommandSent(awaitingResponseCommand);
     }
     
     /**

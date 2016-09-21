@@ -24,22 +24,25 @@
 package drawandcut.ui;
 
 import static drawandcut.Configuration.PADDING;
+import drawandcut.Cut;
 import drawandcut.Shapes;
+import java.text.DateFormat;
+import java.util.Date;
 import java.util.function.Consumer;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
-import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
 import javafx.scene.control.Button;
-import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.FillRule;
+import javafx.scene.shape.Path;
 import javafx.scene.shape.SVGPath;
+import javafx.scene.shape.Shape;
 import javafx.scene.text.Font;
 
 /**
@@ -48,10 +51,11 @@ import javafx.scene.text.Font;
  */
 public class ShapesPane extends BorderPane {
     
-    private Consumer<String> onAction;
+    private Consumer<Object> onAction;
+    private final FlowPane flowPane;
 
     public ShapesPane(Shapes shapes) {        
-        FlowPane flowPane = new FlowPane();
+        flowPane = new FlowPane();
         flowPane.setId("flowPane");
         flowPane.setVgap(PADDING);
         flowPane.setHgap(PADDING);
@@ -73,7 +77,7 @@ public class ShapesPane extends BorderPane {
             button.setPrefSize(100, 100);
             button.setOnAction(t -> {
                 if (onAction != null) {
-                    onAction.accept(key);
+                    onAction.accept(shape);
                 }
             });
             flowPane.getChildren().add(button);
@@ -97,8 +101,24 @@ public class ShapesPane extends BorderPane {
         setCenter(scrollPane);
     }
 
-    public void setOnAction(Consumer<String> onAction) {
+    public void setOnAction(Consumer<Object> onAction) {
         this.onAction = onAction;
     }
     
+    private static final DateFormat KEY_FORMAT = DateFormat.getTimeInstance(DateFormat.SHORT);
+    
+    public void addCut(Cut cut) {
+        Path motif = new Path(cut.getInterior().getElements());
+        ScalableNodePane scalableNodePane = new ScalableNodePane(motif);
+        scalableNodePane.setMinSize(80, 80);
+        scalableNodePane.setPrefSize(80, 80);
+        Button button = new Button(KEY_FORMAT.format(new Date()), scalableNodePane);
+        button.setPrefSize(100, 100);
+        button.setOnAction(t -> {
+            if (onAction != null) {
+                onAction.accept(cut);
+            }
+        });
+        flowPane.getChildren().add(button);
+    }
 }
